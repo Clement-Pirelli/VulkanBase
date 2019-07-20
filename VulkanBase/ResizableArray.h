@@ -5,16 +5,8 @@ class ResizableArray
 {
 public:
 	ResizableArray(){};
-	ResizableArray(T* givenData, unsigned int givenCount) : data(givenData), capacity(givenCount)
-	{
-		for (int i = 0; i < givenCount; i++)
-		{
-			if (givenData[i] == nullptr)
-			{
-				dataCount = i; return;
-			}
-		}
-	}
+	ResizableArray(T* givenData, unsigned int givenCapacity, unsigned int givenDataCount) : data(givenData), capacity(givenCapacity), dataCount(givenDataCount)
+	{}
 
 	~ResizableArray()
 	{
@@ -22,7 +14,7 @@ public:
 		delete[] data;
 	}
 
-	T getElement(unsigned int index) const { return data[index]; }
+	inline T getElement(unsigned int index) const { return data[index]; }
 
 	void push(T element)
 	{
@@ -35,17 +27,32 @@ public:
 		data[dataCount - 1] = element;
 	}
 
-	T* getData() const
+	void push(T *chunk, unsigned int count)
+	{
+		int oldDataCount = dataCount;
+		dataCount += count;
+		while(dataCount > capacity)
+		{
+			autoResize();
+		}
+
+		for(int i = oldDataCount; i < dataCount; i++)
+		{
+			data[i] = chunk[i - oldDataCount];
+		}
+	}
+
+	inline T* getData() const
 	{
 		return data;
 	}
 
-	unsigned int getDataCount() const
+	inline unsigned int getDataCount() const
 	{
 		return dataCount;
 	}
 
-	unsigned int getCapacity() const 
+	inline unsigned int getCapacity() const 
 	{
 		return capacity;
 	}
@@ -53,14 +60,21 @@ public:
 	void resize(unsigned int newSize)
 	{
 		if (newSize < capacity) return;
-		T* old = data;
+		T* oldData = data;
 
 		data = new T[newSize];
-		copyData(old, data);
+		if (oldData != nullptr) 
+		{
+			for (int i = 0; i < dataCount; i++)
+			{
+				data[i] = oldData[i];
+			}
+		}
+
 		capacity = newSize;
 	}
 
-	void manualChangeDataCount(unsigned int newDataCount)
+	inline void manualChangeDataCount(unsigned int newDataCount)
 	{
 		dataCount = newDataCount;
 	}
@@ -76,14 +90,4 @@ private:
 			resize(capacity*2);
 		else resize(1);
 	}
-
-	void copyData(T* old, T* newData)
-	{
-		if (old == nullptr) return;
-		for (int i = 0; i < dataCount; i++)
-		{
-			data[i] = old[i];
-		}
-	}
-
 };
