@@ -71,6 +71,18 @@ struct VBOHandle{ uint32_t handle; };
 
 struct ModelHandle{ uint32_t handle; };
 
+struct ShaderHandle{ uint32_t handle; };
+
+struct ShaderData
+{
+	HandleMap<Model> modelMap;
+	VkPipeline graphicsPipeline;
+	VkPipelineLayout pipelineLayout;
+
+	const char *vertexPath = "";
+	const char *fragmentPath = "";
+};
+
 #pragma endregion
 
 
@@ -89,7 +101,9 @@ public:
 
 	void clearModelVBOs();
 
-	ModelHandle createModel(Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
+	ModelHandle createModel(const ShaderHandle &shaderHandle, Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
+	ShaderHandle createShader(const char *fragmentShaderPath, const char *vertexShaderPath);
+
 
 	uniformDataCreationInfo getUniformDataCreationInfo();
 
@@ -97,10 +111,10 @@ public:
 
 	VBOCreationInfo getVBOCreationInfo();
 
-	void removeModel(const ModelHandle &givenHandle);
+	void removeModel(const ModelHandle &givenHandle, const ShaderHandle &shaderHandle);
 
 	void setCamera(CameraComponent *givenCamera);
-	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, unsigned int i);
+	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i);
 
 private:
 
@@ -138,10 +152,6 @@ private:
 	VkRenderPass renderPass;
 
 	VkDescriptorSetLayout descriptorSetLayout;
-	VkPipelineLayout pipelineLayout;
-
-
-	VkPipeline graphicsPipeline;
 
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
@@ -159,14 +169,12 @@ private:
 
 	HandleMap<TextureData> textures;
 	HandleMap<VertexBufferObject> vbos;
-	HandleMap<Model*> modelMap;
 
-	std::vector<Model> models;
-
+	HandleMap<ShaderData> shaderMap;
 
 	TextureData *depthTexture;
 
-	CameraComponent *currentCamera;
+	CameraComponent *currentCamera = nullptr;
 #pragma endregion
 
 #pragma region VALIDATION_LAYERS
@@ -218,7 +226,7 @@ private:
 #pragma region GRAPHICS_PIPELINE
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 
-	void createGraphicsPipeline();
+	void populateShaderData(ShaderData &shaderData);
 
 #pragma endregion
 

@@ -22,7 +22,12 @@ private:
 	unsigned int playerScore = 0, botScore = 0;
 	
 	float rotationAccumulator = .0f;
+	ShaderHandle shaderHandle;
 	ModelHandle modelHandle;
 	Transform modelTransform;
+
+	ShaderHandle shaderHandle2;
+	ModelHandle modelHandle2;
+	Transform modelTransform2;
 };
 

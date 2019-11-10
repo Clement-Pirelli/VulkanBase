@@ -41,7 +41,7 @@ void Renderer::clearModelTextures()
 	ResourceProvider<TextureData>::clearResources();
 }
 
-ModelHandle Renderer::createModel(Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
+ModelHandle Renderer::createModel(const ShaderHandle &shaderHandle, Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
 {
 	TextureData textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
 	VertexBufferObject vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
@@ -55,13 +55,24 @@ ModelHandle Renderer::createModel(Transform *givenTransform, const char *texture
 	m.uniformData = UniformData(creationInfo);
 	m.vboHandle = vboHandle;
 	m.transform = givenTransform;
-	models.push_back(m);
-
-	uint32_t handle = modelMap.insert(&models[models.size() - 1]);
+	
+	ShaderData &shader = shaderMap[shaderHandle.handle];
+	uint32_t handle = shader.modelMap.insert(m);
 
 	recreateCommandBufferData();
 
 	return ModelHandle{ handle };
+}
+
+ShaderHandle Renderer::createShader(const char * fragmentShaderPath, const char * vertexShaderPath)
+{
+	ShaderData shaderData;
+	shaderData.fragmentPath = fragmentShaderPath;
+	shaderData.vertexPath = vertexShaderPath;
+	populateShaderData(shaderData);
+
+	uint32_t handle = shaderMap.insert(shaderData);
+	return ShaderHandle{ handle };
 }
 
 void Renderer::clearModelVBOs()
@@ -102,23 +113,13 @@ VBOCreationInfo Renderer::getVBOCreationInfo()
 	return creationInfo;
 }
 
-void Renderer::removeModel(const ModelHandle &givenHandle)
+void Renderer::removeModel(const ModelHandle &givenHandle, const ShaderHandle &shaderHandle)
 {
 	vkDeviceWaitIdle(device);
 
-	modelMap.remove(givenHandle.handle);
+	ShaderData &shader = shaderMap[shaderHandle.handle];
 
-	auto it = models.end();
-	for (unsigned int i = 0; i < models.size(); i++)
-	{
-		if (models[i].myHandle.handle == givenHandle.handle)
-		{
-			it = models.begin() + i;
-			(*it).uniformData.cleanup(device);
-			models.erase(it);
-			break;
-		}
-	}
+	shader.modelMap.remove(givenHandle.handle);
 
 	recreateCommandBufferData();
 }
@@ -561,11 +562,11 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void Renderer::createGraphicsPipeline(){
+void Renderer::populateShaderData(ShaderData &shaderData){
 	std::vector<char> vertShaderCode;
-	readFile("shaders/vert.spv", &vertShaderCode);
+	readFile(shaderData.vertexPath, vertShaderCode);
 	std::vector<char> fragShaderCode;
-	readFile("shaders/frag.spv", &fragShaderCode);
+	readFile(shaderData.fragmentPath, fragShaderCode);
 
 	VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -629,8 +630,6 @@ void Renderer::createGraphicsPipeline(){
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	//rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -673,7 +672,7 @@ void Renderer::createGraphicsPipeline(){
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &shaderData.pipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -701,14 +700,14 @@ void Renderer::createGraphicsPipeline(){
 	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr; // Optional
-	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.layout = shaderData.pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
 
 
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &shaderData.graphicsPipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
@@ -854,8 +853,12 @@ void Renderer::cleanupSwapChain()
 
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-	vkDestroyPipeline(device, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+	for(auto &shaderPair : shaderMap.getRawMap())
+	{
+		ShaderData &currentShader = shaderPair.second;
+		vkDestroyPipeline(device, currentShader.graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(device, currentShader.pipelineLayout, nullptr);
+	}
 	vkDestroyRenderPass(device, renderPass, nullptr);
 
 	for (unsigned int i = 0; i < swapChainData.imagesCount; i++)
@@ -865,10 +868,11 @@ void Renderer::cleanupSwapChain()
 
 	vkDestroySwapchainKHR(device, swapChainData.swapChain, nullptr);
 
-	for(Model &m : models)
-	{
-		m.uniformData.cleanup(device);
-	}
+	for (auto &shaderPair : shaderMap.getRawMap())
+		for (auto &modelPair : shaderPair.second.modelMap.getRawMap())
+		{
+			modelPair.second.uniformData.cleanup(device);
+		}
 }
 
 void Renderer::recreateSwapChain(){
@@ -886,14 +890,19 @@ void Renderer::recreateSwapChain(){
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
-	createGraphicsPipeline();
+
+	for(auto &shaderPair : shaderMap.getRawMap())
+	{
+		populateShaderData(shaderPair.second);
+	}
 	createDepthResources();
 	createFramebuffers();
+	for (auto &shaderPair : shaderMap.getRawMap())
+		for (auto &modelPair : shaderPair.second.modelMap.getRawMap())
+		{
+			modelPair.second.uniformData.createData(device, physicalDevice, swapChainData, descriptorSetLayout, textures[modelPair.second.textureHandle.handle]);
+		}
 
-	for (Model &m : models)
-	{
-		m.uniformData.createData(device, physicalDevice, swapChainData, descriptorSetLayout, textures[m.textureHandle.handle]);
-	}
 	createCommandBuffers();
 }
 
@@ -940,16 +949,18 @@ void Renderer::updateUniformBuffer(uint32_t currentImage)
 		projMat[1][1] *= -1;
 	}
 
-	for (Model &m : models)
-	{
-		modelMat = m.transform->getGlobalTransform();
-		ubo.world = projMat * viewMat * modelMat;
-		ubo.color = m.color;
-		void* data;
-		vkMapMemory(device, m.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, m.uniformData.getUniformBuffersMemory()->at(currentImage));
-	}
+	for(auto &shaderPair : shaderMap.getRawMap())
+		for(auto &modelPair : shaderPair.second.modelMap.getRawMap())
+		{
+			Model &currentModel = modelPair.second;
+			modelMat = currentModel.transform->getGlobalTransform();
+			ubo.world = projMat * viewMat * modelMat;
+			ubo.color = currentModel.color;
+			void* data;
+			vkMapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vkUnmapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage));
+		}
 }
 
 void Renderer::recreateCommandBufferData()
@@ -960,18 +971,18 @@ void Renderer::recreateCommandBufferData()
 	createCommandBuffers();
 }
 
-void Renderer::onCreateCommandBuffers(VkCommandBuffer commandBuffer, unsigned int i)
+void Renderer::onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i)
 {
-	for(Model &model : models)
+	for(auto &modelPair : shader.modelMap.getRawMap())
 	{
-		VertexBufferObject &currentVBO = vbos[model.vboHandle.handle];
+		VertexBufferObject &currentVBO = vbos[modelPair.second.vboHandle.handle];
 		VkBuffer vertexBuffers[] = { currentVBO.getVertexBuffer() };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffer, currentVBO.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		//uniforms
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &model.uniformData.getDescriptorSets()->at(i), 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader.pipelineLayout, 0, 1, &modelPair.second.uniformData.getDescriptorSets()->at(i), 0, nullptr);
 
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(currentVBO.getIndices().size()), 1, 0, 0, 0);
 	}
@@ -1032,7 +1043,6 @@ void Renderer::initVulkan() {
 	createImageViews();
 	createRenderPass();
 	createDescriptorSetLayout();
-	createGraphicsPipeline();
 	createCommandPool();
 	createDepthResources();
 	createFramebuffers();
@@ -1185,12 +1195,14 @@ void Renderer::createCommandBuffers() {
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+		for(auto &pair : shaderMap.getRawMap())
+		{
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pair.second.graphicsPipeline);
 
-		onCreateCommandBuffers(commandBuffers[i], i);
-
+			onCreateCommandBuffers(commandBuffers[i], pair.second, i);
+		}
+		
 		vkCmdEndRenderPass(commandBuffers[i]);
-
 
 
 		if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {

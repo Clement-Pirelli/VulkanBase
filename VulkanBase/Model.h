@@ -13,7 +13,6 @@ struct Model
 	UniformData uniformData;
 	Transform *transform = nullptr;
 	glm::vec4 color;
-	ModelHandle myHandle = { 0 };
 };
 
 #endif

@@ -44,7 +44,7 @@ VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkI
 	return returnVal;
 }
 
-void readFile(const std::string & filename, std::vector<char>* buffer) {
+void readFile(const std::string &filename, std::vector<char> &buffer) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {
@@ -52,10 +52,10 @@ void readFile(const std::string & filename, std::vector<char>* buffer) {
 	}
 
 	unsigned int fileSize = (unsigned int)file.tellg();
-	buffer->resize(fileSize);
+	buffer.resize(fileSize);
 
 	file.seekg(0);
-	file.read(buffer->data(), fileSize);
+	file.read(buffer.data(), fileSize);
 
 	file.close();
 }

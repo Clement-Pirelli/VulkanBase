@@ -32,6 +32,8 @@ public:
 		data.empty();
 	}
 
+	std::unordered_map<uint32_t, T> &getRawMap(){ return data; }
+
 private:
 	uint32_t lastHandle = 0;
 	std::unordered_map<uint32_t, T> data;
