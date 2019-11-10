@@ -5,10 +5,8 @@
 #include <stdexcept>
 
 #include "Vertex.h"
-#include "QueueFamilyIndices.h"
 #include "VulkanUtilities.h"
 #include "UniformData.h"
-#include "CommandBufferData.h"
 #include "VertexBufferObject.h"
 #include "UniformData.h"
 #include "TextureData.h"
@@ -16,6 +14,7 @@
 #include "Transform.h"
 #include "CameraComponent.h"
 #include "Entity.h"
+#include "ResourceProvider.h"
 
 #pragma region PUBLIC
 
@@ -36,87 +35,61 @@ void Renderer::render()
 	drawFrame();
 }
 
-TextureData *Renderer::getModelTexture(const char* path)
+void Renderer::clearModelTextures()
 {
-	std::string pathStr = std::string(path);
-	//if a texture already exists at that path, return that instead of creating a duplicate
-	if (textures.count(path) > 0)
-		return textures.at(path);
+	textures.clear();
+	ResourceProvider<TextureData>::clearResources();
+}
 
+ModelHandle Renderer::createModel(Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
+{
+	TextureData textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
+	VertexBufferObject vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
+	TextureHandle textureHandle = { textures.insert(textureData) };
+	VBOHandle vboHandle = { vbos.insert(vbo) };
+	Model m;
+	m.color = color;
+	m.textureHandle = textureHandle;
+	uniformDataCreationInfo creationInfo = getUniformDataCreationInfo();
+	creationInfo.texture = textureData;
+	m.uniformData = UniformData(creationInfo);
+	m.vboHandle = vboHandle;
+	m.transform = givenTransform;
+	models.push_back(m);
 
+	uint32_t handle = modelMap.insert(&models[models.size() - 1]);
+
+	recreateCommandBufferData();
+
+	return ModelHandle{ handle };
+}
+
+void Renderer::clearModelVBOs()
+{
+	vbos.clear();
+	ResourceProvider<VertexBufferObject>::clearResources();
+}
+
+uniformDataCreationInfo Renderer::getUniformDataCreationInfo()
+{
+	uniformDataCreationInfo returnInfo(swapChainData);
+	returnInfo.device = device;
+	returnInfo.descriptorSetLayout = descriptorSetLayout;
+	returnInfo.physicalDevice = physicalDevice;
+	return returnInfo;
+}
+
+textureCreationInfo Renderer::getTextureCreationInfo()
+{
 	textureCreationInfo creationInfo;
 	creationInfo.device = device;
 	creationInfo.physicalDevice = physicalDevice;
 	creationInfo.graphicsQueue = graphicsQueue;
 	creationInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 	creationInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
-	creationInfo.path = path;
 	creationInfo.hasSampler = true;
 	creationInfo.commandPool = commandPool;
-	TextureData *returnData = new TextureData(creationInfo);
-
-	textures.insert(std::pair<std::string, TextureData*>(pathStr, returnData));
-
-	return returnData;
-}
-
-void Renderer::clearModelTextures()
-{
-	for (auto textureData : textures)
-	{
-		textureData.second->cleanup(device);
-		delete textureData.second;
-	}
-
-	textures.clear();
-}
-
-VertexBufferObject *Renderer::getModelMesh(const char *path)
-{
-	std::string pathStr = std::string(path);
-	if (vbos.count(pathStr) > 0)
-		return vbos.at(path);
-
-	VBOCreationInfo creationInfo = getVBOCreationInfo();
-	VertexBufferObject *returnVBO = new VertexBufferObject(creationInfo, path);
-
-	vbos.insert(std::pair<std::string, VertexBufferObject*>(pathStr,returnVBO));
-
-	return returnVBO;
-}
-
-void Renderer::clearModelVBOs()
-{
-	for (auto vboData : vbos)
-	{
-		vboData.second->cleanup(device);
-		delete vboData.second;
-	}
-	vbos.clear();
-}
-
-commandBufferDataCreationInfo Renderer::getCommandBufferDataCreationInfo()
-{
-	commandBufferDataCreationInfo returnInfo;
-	returnInfo.device = device;
-	returnInfo.pipelineLayout = pipelineLayout;
-	returnInfo.swapChainData = &swapChainData;
-	returnInfo.swapChainFramebuffers = &swapChainFramebuffers;
-	returnInfo.commandPool = commandPool;
-	returnInfo.renderPass = renderPass;
-	returnInfo.graphicsPipeline = graphicsPipeline;
-	returnInfo.renderer = this;
-	return returnInfo;
-}
-
-uniformDataCreationInfo Renderer::getUniformDataCreationInfo()
-{
-	uniformDataCreationInfo returnInfo;
-	returnInfo.device = device;
-	returnInfo.descriptorSetLayout = descriptorSetLayout;
-	returnInfo.physicalDevice = physicalDevice;
-	returnInfo.swapChainData = &swapChainData;
-	return returnInfo;
+	return creationInfo;
 }
 
 VBOCreationInfo Renderer::getVBOCreationInfo()
@@ -129,58 +102,22 @@ VBOCreationInfo Renderer::getVBOCreationInfo()
 	return creationInfo;
 }
 
-void Renderer::addModel(Model * givenModel)
-{
-	models.push_back(givenModel);
-	recreateCommandBufferData();
-}
-
-void Renderer::removeModel(Model * givenModel)
+void Renderer::removeModel(const ModelHandle &givenHandle)
 {
 	vkDeviceWaitIdle(device);
+
+	modelMap.remove(givenHandle.handle);
 
 	auto it = models.end();
 	for (unsigned int i = 0; i < models.size(); i++)
 	{
-		if (models[i] == givenModel)
+		if (models[i].myHandle.handle == givenHandle.handle)
 		{
 			it = models.begin() + i;
+			(*it).uniformData.cleanup(device);
+			models.erase(it);
+			break;
 		}
-	}
-
-	if (it != models.end())
-	{
-		Model *m = *it;
-		m->cleanupUniformData(device);
-		models.erase(it);
-	}
-
-	recreateCommandBufferData();
-}
-void Renderer::addUIModel(Model *givenUIModel)
-{
-	UIModels.push_back(givenUIModel);
-	recreateCommandBufferData();
-}
-
-void Renderer::removeUIModel(Model * givenUIModel)
-{
-	vkDeviceWaitIdle(device);
-
-	auto it = UIModels.end();
-	for (unsigned int i = 0; i < UIModels.size(); i++)
-	{
-		if (UIModels[i] == givenUIModel)
-		{
-			it = UIModels.begin() + i;
-		}
-	}
-
-	if (it != UIModels.end())
-	{
-		Model *m = *it;
-		m->cleanupUniformData(device);
-		UIModels.erase(it);
 	}
 
 	recreateCommandBufferData();
@@ -347,7 +284,7 @@ void Renderer::createInstance() {
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "Hello Triangle";
+	appInfo.pApplicationName = "Bwaa";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "No Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -400,7 +337,7 @@ bool Renderer::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	{
 		for (unsigned int j = 0; j < availableExtensionCount; j++)
 		{
-			if (requiredExtensions[i] == availableExtensions->extensionName)
+			if (requiredExtensions[i] == availableExtensions[j].extensionName)
 			{
 				delete[] availableExtensions;
 				return true;
@@ -605,7 +542,7 @@ void Renderer::createImageViews()
 	VkFormat format = swapChainData.imageFormat;
 	for (size_t i = 0; i < swapChainData.imagesCount; i++)
 	{
-		swapChainData.imageViews[i] = createImageView(device, swapChainData.images[i], format, VK_IMAGE_ASPECT_COLOR_BIT);
+		swapChainData.imageViews[i] = createImageView(device, swapChainData.images[i], format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	}
 }
 
@@ -915,7 +852,7 @@ void Renderer::cleanupSwapChain()
 		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
 	}
 
-	commandBufferData->cleanup(device, commandPool);
+	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
 	vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
@@ -928,13 +865,9 @@ void Renderer::cleanupSwapChain()
 
 	vkDestroySwapchainKHR(device, swapChainData.swapChain, nullptr);
 
-	for(Model *m : models)
+	for(Model &m : models)
 	{
-		m->cleanupUniformData(device);
-	}
-	for(Model* m : UIModels)
-	{
-		m->cleanupUniformData(device);
+		m.uniformData.cleanup(device);
 	}
 }
 
@@ -957,16 +890,11 @@ void Renderer::recreateSwapChain(){
 	createDepthResources();
 	createFramebuffers();
 
-	for (Model *m : models)
+	for (Model &m : models)
 	{
-		m->recreateUniformData(device, physicalDevice, &swapChainData, descriptorSetLayout);
+		m.uniformData.createData(device, physicalDevice, swapChainData, descriptorSetLayout, textures[m.textureHandle.handle]);
 	}
-	for(Model *m : UIModels)
-	{
-		m->recreateUniformData(device, physicalDevice, &swapChainData, descriptorSetLayout);
-	}
-	commandBufferDataCreationInfo creationInfo = getCommandBufferDataCreationInfo();
-	commandBufferData->createCommandBuffers(creationInfo);
+	createCommandBuffers();
 }
 
 void Renderer::createDescriptorSetLayout()
@@ -1006,66 +934,46 @@ void Renderer::updateUniformBuffer(uint32_t currentImage)
 	UniformBufferObject ubo = {};
 	if (currentCamera != nullptr)
 	{
-		viewMat = currentCamera->getOwner()->getTransform()->getGlobalTransform();
-		projMat = glm::perspective(glm::radians(currentCamera->getDegFOV()), swapChainData.extent.width / (float)swapChainData.extent.height, currentCamera->getZNear(), currentCamera->getZFar());
-		
+		viewMat = currentCamera->getViewMat();
+		projMat = currentCamera->getProjectionMat();
 		//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
 		projMat[1][1] *= -1;
 	}
 
-	for (Model *m : models)
+	for (Model &m : models)
 	{
-		modelMat = m->getTransform()->getGlobalTransform();
+		modelMat = m.transform->getGlobalTransform();
 		ubo.world = projMat * viewMat * modelMat;
-		ubo.color = m->getColor();
+		ubo.color = m.color;
 		void* data;
-		vkMapMemory(device, m->getUniformData()->getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
+		vkMapMemory(device, m.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, m->getUniformData()->getUniformBuffersMemory()->at(currentImage));
-	}
-
-	viewMat = glm::mat4(1.0f);
-	projMat = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f);
-
-	for(Model* m : UIModels)
-	{		
-		modelMat = m->getTransform()->getLocalTransform();
-
-		ubo.world = projMat * viewMat * modelMat;
-		ubo.color = m->getColor();
-
-		void* data;
-		vkMapMemory(device, m->getUniformData()->getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, m->getUniformData()->getUniformBuffersMemory()->at(currentImage));
+		vkUnmapMemory(device, m.uniformData.getUniformBuffersMemory()->at(currentImage));
 	}
 }
 
 void Renderer::recreateCommandBufferData()
 {
 	vkDeviceWaitIdle(device);
-	commandBufferDataCreationInfo creationInfo = getCommandBufferDataCreationInfo();
-	if(commandBufferData == nullptr)
-	{
-		commandBufferData = new CommandBufferData(creationInfo);
-	}
-	else 
-	{
-		commandBufferData->cleanup(device, commandPool);
-		commandBufferData->createCommandBuffers(creationInfo);
-	}
+
+	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	createCommandBuffers();
 }
 
 void Renderer::onCreateCommandBuffers(VkCommandBuffer commandBuffer, unsigned int i)
 {
-	commandBufferDataCreationInfo creationInfo = getCommandBufferDataCreationInfo();
-	for(Model *m : models)
+	for(Model &model : models)
 	{
-		m->onCreateCommandBuffers(creationInfo, commandBuffer, i);
-	}
-	for(Model *m : UIModels)
-	{
-		m->onCreateCommandBuffers(creationInfo, commandBuffer, i);
+		VertexBufferObject &currentVBO = vbos[model.vboHandle.handle];
+		VkBuffer vertexBuffers[] = { currentVBO.getVertexBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, currentVBO.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		//uniforms
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &model.uniformData.getDescriptorSets()->at(i), 0, nullptr);
+
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(currentVBO.getIndices().size()), 1, 0, 0, 0);
 	}
 }
 
@@ -1104,13 +1012,14 @@ void Renderer::createDepthResources()
 		physicalDevice,
 		swapChainData.extent.width,
 		swapChainData.extent.height,
+		1,
 		depthFormat,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	depthTexture->setView(createImageView(device, depthTexture->getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT));
-	TextureData::transitionImageLayout(device, commandPool, graphicsQueue, depthTexture->getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	depthTexture->setView(createImageView(device, depthTexture->getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1));
+	TextureData::transitionImageLayout(device, commandPool, graphicsQueue, depthTexture->getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 void Renderer::initVulkan() {
@@ -1128,6 +1037,7 @@ void Renderer::initVulkan() {
 	createDepthResources();
 	createFramebuffers();
 	createSyncObjects();
+	createCommandBuffers();
 }
 
 void Renderer::drawFrame()
@@ -1161,7 +1071,7 @@ void Renderer::drawFrame()
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
 	
-	submitInfo.pCommandBuffers = &commandBufferData->getCommandBuffers()->at(imageIndex);
+	submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
 
 	VkSemaphore signalSemaphores[1] = { currentSemaphore };
 	submitInfo.signalSemaphoreCount = 1;
@@ -1232,4 +1142,59 @@ void Renderer::framebufferResizeCallback(GLFWwindow * window, int width, int hei
 {
 	Renderer *ren = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
 	ren->framebufferResized = true;
+}
+
+void Renderer::createCommandBuffers() {
+	commandBuffers.resize(swapChainFramebuffers.size());
+
+	VkCommandBufferAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = (uint32_t)commandBuffers.capacity();
+
+	if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate command buffers!");
+	}
+
+	VkRenderPassBeginInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = swapChainData.extent;
+
+	constexpr uint32_t clearValuesCount = 2;
+	VkClearValue clearValues[clearValuesCount] = {};
+	clearValues[0].color = { .0f, .0f, .0f, 1.0f };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValuesCount);
+	renderPassInfo.pClearValues = clearValues;
+
+	for (unsigned int i = 0; i < commandBuffers.size(); i++) {
+
+		renderPassInfo.framebuffer = swapChainFramebuffers[i];
+
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
+
+		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+		onCreateCommandBuffers(commandBuffers[i], i);
+
+		vkCmdEndRenderPass(commandBuffers[i]);
+
+
+
+		if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record command buffer!");
+		}
+	}
 }

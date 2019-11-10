@@ -11,16 +11,16 @@ PlayerInputComponent::PlayerInputComponent(int upKey, int downKey, int leftKey, 
 	}
 
 	inputKeys[DIRECTION::UP] = upKey;
-	inputCallback[DIRECTION::UP] = Delegate::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onUp>(this);
+	inputCallback[DIRECTION::UP] = Delegate<InputInfo>::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onUp>(this);
 
 	inputKeys[DIRECTION::DOWN] = downKey;
-	inputCallback[DIRECTION::DOWN] = Delegate::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onDown>(this);
+	inputCallback[DIRECTION::DOWN] = Delegate<InputInfo>::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onDown>(this);
 	
 	inputKeys[DIRECTION::LEFT] = leftKey;
-	inputCallback[DIRECTION::LEFT] = Delegate::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onLeft>(this);
+	inputCallback[DIRECTION::LEFT] = Delegate<InputInfo>::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onLeft>(this);
 
 	inputKeys[DIRECTION::RIGHT] = rightKey;
-	inputCallback[DIRECTION::RIGHT] = Delegate::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onRight>(this);
+	inputCallback[DIRECTION::RIGHT] = Delegate<InputInfo>::makeDelegate<PlayerInputComponent, &PlayerInputComponent::onRight>(this);
 
 
 	for (unsigned int i = 0; i < DIRECTION::COUNT; i++)
@@ -46,24 +46,24 @@ PlayerInputComponent::~PlayerInputComponent()
 	}
 }
 
-void PlayerInputComponent::onUp(delegateInfo &info)
+void PlayerInputComponent::onUp(InputInfo &info)
 {
-	input[DIRECTION::UP] = (info.ix == INPUT_STATE::REPEATED || info.ix == INPUT_STATE::PRESSED);
+	input[DIRECTION::UP] = (info.state == INPUT_STATE::REPEATED || info.state == INPUT_STATE::PRESSED);
 }
 
-void PlayerInputComponent::onDown(delegateInfo &info)
+void PlayerInputComponent::onDown(InputInfo &info)
 {
-	input[DIRECTION::DOWN] = (info.ix == INPUT_STATE::REPEATED || info.ix == INPUT_STATE::PRESSED);
+	input[DIRECTION::DOWN] = (info.state == INPUT_STATE::REPEATED || info.state == INPUT_STATE::PRESSED);
 }
 
-void PlayerInputComponent::onLeft(delegateInfo &info)
+void PlayerInputComponent::onLeft(InputInfo &info)
 {
-	input[DIRECTION::LEFT] = (info.ix == INPUT_STATE::REPEATED || info.ix == INPUT_STATE::PRESSED);
+	input[DIRECTION::LEFT] = (info.state == INPUT_STATE::REPEATED || info.state == INPUT_STATE::PRESSED);
 }
 
-void PlayerInputComponent::onRight(delegateInfo &info)
+void PlayerInputComponent::onRight(InputInfo &info)
 {
-	input[DIRECTION::RIGHT] = (info.ix == INPUT_STATE::REPEATED || info.ix == INPUT_STATE::PRESSED);
+	input[DIRECTION::RIGHT] = (info.state == INPUT_STATE::REPEATED || info.state == INPUT_STATE::PRESSED);
 }
 
 void PlayerInputComponent::onUpdate(float deltaTime)
@@ -74,6 +74,16 @@ void PlayerInputComponent::onUpdate(float deltaTime)
 void PlayerInputComponent::onLateUpdate(float deltaTime)
 {
 	lastMousePos = currentMousePos;
+}
+
+void PlayerInputComponent::onActive()
+{
+	//TODO? ADD DELEGATES BACK
+}
+
+void PlayerInputComponent::onInactive()
+{
+	//TODO? REMOVE DELEGATES
 }
 
 glm::vec2 PlayerInputComponent::getInputDirection()

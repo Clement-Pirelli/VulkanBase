@@ -1,6 +1,8 @@
 #include "VertexBufferObject.h"
 #include "VulkanUtilities.h"
 #include <fstream>
+#include "Renderer.h"
+#include "Singleton.h"
 
 typedef char byte;
 
@@ -9,22 +11,6 @@ VertexBufferObject::VertexBufferObject(VBOCreationInfo & creationInfo, const cha
 	loadModel(path);
 	createVertexBuffer(creationInfo.device, creationInfo.physicalDevice, creationInfo.commandPool, creationInfo.graphicsQueue);
 	createIndexBuffer(creationInfo.device, creationInfo.physicalDevice, creationInfo.commandPool, creationInfo.graphicsQueue);
-}
-
-void VertexBufferObject::cleanup(VkDevice device)
-{
-	vkDestroyBuffer(device, indexBuffer, nullptr);
-	vkFreeMemory(device, indexBufferMemory, nullptr);
-
-	vkDestroyBuffer(device, vertexBuffer, nullptr);
-	vkFreeMemory(device, vertexBufferMemory, nullptr);
-
-	indexBuffer = nullptr;
-	indexBufferMemory = nullptr;
-	vertexBuffer = nullptr;
-	vertexBufferMemory = nullptr;
-	vertices.clear();
-	indices.clear();
 }
 
 void VertexBufferObject::createIndexBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue)
@@ -179,4 +165,74 @@ box VertexBufferObject::getBox()
 	returnBox.topRightFar = { largestX,largestY,largestZ };
 
 	return returnBox;
+}
+
+void VertexBufferObject::getUnitCube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
+{
+	glm::vec3 positions[8] =
+	{
+		glm::vec3(-1.0f,-1.0f,-1.0f),
+		glm::vec3(-1.0f,-1.0f, 1.0f),
+		glm::vec3(-1.0f, 1.0f, 1.0f),
+		glm::vec3(1.0f, 1.0f,-1.0f),
+		glm::vec3(-1.0f, 1.0f,-1.0f),
+		glm::vec3(1.0f,-1.0f, 1.0f),
+		glm::vec3(1.0f,-1.0f,-1.0f),
+		glm::vec3(1.0f, 1.0f, 1.0f),
+	};
+
+	uint32_t ind[36] =
+	{
+		0,	1,	2,
+		0,	2,	4,
+		5,  7,	1,
+		7,	2,	1,
+		1,	6,	5,
+		1,	0,	6,
+		4,	3,	6,
+		0,	4,	6,
+		7,	3,	2,
+		3,	4,	2,
+		6,	3,	5,
+		3,	7,	5
+	};
+
+	vertices.resize(8);
+	indices.resize(36);
+
+
+	for (unsigned int i = 0; i < 8; i++)
+	{
+		vertices[i].pos = positions[i];
+		vertices[i].texCoord = glm::vec2(.0f, .0f);
+	}
+
+	for (unsigned int i = 0; i < 36; i++)
+	{
+		indices[i] = ind[i];
+	}
+}
+
+VertexBufferObject VertexBufferObject::create(std::string name)
+{
+	auto creationInfo = Singleton<Renderer>::getInstance()->getVBOCreationInfo();
+	return VertexBufferObject(creationInfo, name.c_str());
+}
+
+void VertexBufferObject::destroy(VertexBufferObject & givenVBO)
+{
+	VkDevice device = Singleton<Renderer>::getInstance()->getVBOCreationInfo().device;
+
+	vkDestroyBuffer(device, givenVBO.indexBuffer, nullptr);
+	vkFreeMemory(device, givenVBO.indexBufferMemory, nullptr);
+
+	vkDestroyBuffer(device, givenVBO.vertexBuffer, nullptr);
+	vkFreeMemory(device, givenVBO.vertexBufferMemory, nullptr);
+
+	givenVBO.indexBuffer = nullptr;
+	givenVBO.indexBufferMemory = nullptr;
+	givenVBO.vertexBuffer = nullptr;
+	givenVBO.vertexBufferMemory = nullptr;
+	givenVBO.vertices.clear();
+	givenVBO.indices.clear();
 }

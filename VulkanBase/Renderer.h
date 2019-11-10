@@ -7,6 +7,8 @@
 #include <vector>
 #include <unordered_map>
 #include <Vulkan/vulkan.h>
+#include "Optional.h"
+#include "HandleMap.h"
 
 struct VkSurfaceCapabilitiesKHR;
 struct VkSurfaceFormatKHR;
@@ -15,17 +17,25 @@ struct GLFWwindow;
 class TextureData;
 class VertexBufferObject;
 struct uniformDataCreationInfo;
-struct commandBufferDataCreationInfo;
-class Model;
+struct Model;
 struct SwapChainData;
 struct QueueFamilyIndices;
 class Transform;
 class CameraComponent;
-class CommandBufferData;
 struct VBOCreationInfo;
+struct textureCreationInfo;
 
 #pragma region STRUCTS
 
+struct QueueFamilyIndices
+{
+	Optional<uint32_t> graphicsFamily;
+	Optional<uint32_t> presentFamily;
+
+	bool isComplete() {
+		return graphicsFamily.isSet() && presentFamily.isSet();
+	}
+};
 
 struct SwapChainSupportDetails
 {
@@ -38,6 +48,8 @@ struct SwapChainSupportDetails
 
 struct SwapChainData
 {
+	SwapChainData(){}
+
 	VkSwapchainKHR swapChain;
 
 	unsigned int imagesCount = 0;
@@ -53,6 +65,12 @@ struct SwapChainData
 	}
 };
 
+struct TextureHandle{ uint32_t handle; };
+
+struct VBOHandle{ uint32_t handle; };
+
+struct ModelHandle{ uint32_t handle; };
+
 #pragma endregion
 
 
@@ -67,24 +85,19 @@ public:
 	
 	void render();
 
-	TextureData *getModelTexture(const char* path);
-
 	void clearModelTextures();
 
 	void clearModelVBOs();
 
-	VertexBufferObject *getModelMesh(const char *path);
-
-	commandBufferDataCreationInfo getCommandBufferDataCreationInfo();
+	ModelHandle createModel(Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
 
 	uniformDataCreationInfo getUniformDataCreationInfo();
 
+	textureCreationInfo getTextureCreationInfo();
+
 	VBOCreationInfo getVBOCreationInfo();
 
-	void addModel(Model *givenModel);
-	void removeModel(Model *givenModel);
-	void addUIModel(Model *givenUIModel);
-	void removeUIModel(Model *givenUIModel);
+	void removeModel(const ModelHandle &givenHandle);
 
 	void setCamera(CameraComponent *givenCamera);
 	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, unsigned int i);
@@ -131,8 +144,7 @@ private:
 	VkPipeline graphicsPipeline;
 
 	VkCommandPool commandPool;
-	CommandBufferData *commandBufferData = nullptr;
-
+	std::vector<VkCommandBuffer> commandBuffers;
 
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -145,11 +157,12 @@ private:
 	size_t currentFrame = 0;
 	bool framebufferResized = false;
 
+	HandleMap<TextureData> textures;
+	HandleMap<VertexBufferObject> vbos;
+	HandleMap<Model*> modelMap;
 
-	std::unordered_map<std::string, TextureData*> textures;
-	std::unordered_map<std::string, VertexBufferObject*> vbos;
-	std::vector<Model*> models;
-	std::vector<Model*> UIModels;
+	std::vector<Model> models;
+
 
 	TextureData *depthTexture;
 
@@ -226,6 +239,9 @@ private:
 	void updateUniformBuffer(uint32_t currentImage);
 
 	void recreateCommandBufferData();
+
+	void createCommandBuffers();
+
 #pragma region DEPTH_TEXTURE
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 

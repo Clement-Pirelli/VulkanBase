@@ -7,7 +7,7 @@ std::unordered_map<int, DelegateVector> InputManager::keyboardCallbacks	=	std::u
 std::unordered_map<int, DelegateVector> InputManager::mouseCallbacks	=	std::unordered_map<int, DelegateVector>();
 GLFWwindow *InputManager::window = nullptr;
 
-static int glfwToEnum(int glfwAction)
+static INPUT_STATE glfwToEnum(int glfwAction)
 {
 	switch(glfwAction)
 	{
@@ -18,17 +18,17 @@ static int glfwToEnum(int glfwAction)
 	case GLFW_REPEAT:
 		return INPUT_STATE::REPEATED;
 	}
-	return -1;
+	return INPUT_STATE::UNDEFINED;
 }
 
 
-void InputManager::addButtonCallback(int givenButton, Delegate *givenDelegate)
+void InputManager::addButtonCallback(int givenButton, Delegate<InputInfo> *givenDelegate)
 {
 	if (mouseCallbacks.count(givenButton) == 0)
 	{
-		std::vector<Delegate*> v = std::vector<Delegate*>();
+		std::vector<Delegate<InputInfo>*> v = std::vector<Delegate<InputInfo>*>();
 		v.push_back(givenDelegate);
-		mouseCallbacks.emplace(std::pair<int, std::vector<Delegate*>>(givenButton, v));
+		mouseCallbacks.emplace(std::pair<int, std::vector<Delegate<InputInfo>*>>(givenButton, v));
 	} else 
 	{
 		auto callbacks = mouseCallbacks[givenButton];
@@ -36,13 +36,13 @@ void InputManager::addButtonCallback(int givenButton, Delegate *givenDelegate)
 	}
 }
 
-void InputManager::addKeyboardCallback(int givenKey, Delegate *givenDelegate)
+void InputManager::addKeyboardCallback(int givenKey, Delegate<InputInfo> *givenDelegate)
 {
 	if (keyboardCallbacks.count(givenKey) == 0)
 	{
-		std::vector<Delegate*> v = std::vector<Delegate*>();
+		std::vector<Delegate<InputInfo>*> v = std::vector<Delegate<InputInfo>*>();
 		v.push_back(givenDelegate);
-		keyboardCallbacks.emplace(std::pair<int, std::vector<Delegate*>>(givenKey, v));
+		keyboardCallbacks.emplace(std::pair<int, std::vector<Delegate<InputInfo>*>>(givenKey, v));
 	} else
 	{
 		auto callbacks = keyboardCallbacks[givenKey];
@@ -50,7 +50,7 @@ void InputManager::addKeyboardCallback(int givenKey, Delegate *givenDelegate)
 	}
 }
 
-void InputManager::removeButtonCallback(int givenButton, Delegate *givenDelegate)
+void InputManager::removeButtonCallback(int givenButton, Delegate<InputInfo> *givenDelegate)
 {
 	if(mouseCallbacks.count(givenButton) > 0)
 	{
@@ -68,7 +68,7 @@ void InputManager::removeButtonCallback(int givenButton, Delegate *givenDelegate
 	}
 }
 
-void InputManager::removeKeyboardCallback(int givenKey, Delegate *givenDelegate)
+void InputManager::removeKeyboardCallback(int givenKey, Delegate<InputInfo> *givenDelegate)
 {
 	if (keyboardCallbacks.count(givenKey) > 0)
 	{
@@ -91,9 +91,10 @@ void InputManager::mouseButtonCallback(GLFWwindow *window, int button, int actio
 	if(mouseCallbacks.count(button) > 0)
 	{
 		auto callbacks = mouseCallbacks[button];
-		delegateInfo info;
-		info.ix = glfwToEnum(action);
-		for(Delegate *callback : callbacks)
+		InputInfo info;
+		info.state = glfwToEnum(action);
+		info.mods = mods;
+		for(Delegate<InputInfo> *callback : callbacks)
 		{
 			(*callback)(info);
 		}
@@ -105,10 +106,10 @@ void InputManager::keyboardKeyCallback(GLFWwindow *window, int key, int scancode
 	if (keyboardCallbacks.count(key) > 0)
 	{
 		auto callbacks = keyboardCallbacks[key];
-		delegateInfo info;
-		info.ix = glfwToEnum(action);
-		info.iy = mods;
-		for (Delegate *callback : callbacks)
+		InputInfo info;
+		info.state = glfwToEnum(action);
+		info.mods = mods;
+		for (Delegate<InputInfo> *callback : callbacks)
 		{
 			(*callback)(info);
 		}

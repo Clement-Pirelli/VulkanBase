@@ -6,7 +6,7 @@
 class PongMovementComponent : public Component
 {
 public:
-	PongMovementComponent(float givenSpeed = 1.0f);
+	PongMovementComponent(PlayerInputComponent *givenInputComponent, float givenSpeed = 1.0f);
 	~PongMovementComponent();
 	void onInit() override;
 	void onUpdate(float deltaTime) override;

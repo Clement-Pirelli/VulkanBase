@@ -1,19 +1,8 @@
 #pragma once
 
-union delegateInfo
-{
-	struct
-	{
-		int ix, iy, iz;
-	};
-
-	struct
-	{
-		float fx, fy, fz;
-	};
-};
 
 //base code from : https://www.codeproject.com/Articles/11015/The-Impossibly-Fast-C-Delegates
+template <class INFO>
 class Delegate
 {
 public:
@@ -21,7 +10,7 @@ public:
 	Delegate() : object(0), function(0){}
 
 	//creates the delegate
-	template <class T, void (T::*TMethod)(delegateInfo&)>
+	template <class T, void (T::*TMethod)(INFO&)>
 	static Delegate makeDelegate(T *givenObject)
 	{
 		Delegate returnDelegate;
@@ -30,17 +19,17 @@ public:
 		return returnDelegate;
 	}
 
-	void operator()(delegateInfo&info)
+	void operator()(INFO&info)
 	{
 		(*function)(object, info);
 	}
 
 private:
 	//function which takes a void pointer and event information
-	typedef void(*intermediaryFunction)(void*object, delegateInfo&);
+	typedef void(*intermediaryFunction)(void*object, INFO&);
 
-	template <class T, void (T::*TMethod)(delegateInfo&)>
-	static void method_stub(void* givenObject, delegateInfo&givenInfo)
+	template <class T, void (T::*TMethod)(INFO&)>
+	static void method_stub(void* givenObject, INFO&givenInfo)
 	{
 		T* p = static_cast<T*>(givenObject);
 		(p->*TMethod)(givenInfo); // #2

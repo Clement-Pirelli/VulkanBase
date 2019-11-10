@@ -9,11 +9,11 @@
 #include "AudioManager.h"
 #include "Singleton.h"
 #include "InputManager.h"
-
 #include "EntityManager.h"
 #include "CollisionManager.h"
 #include "StateMachine.h"
 #include "PongState.h"
+
 
 Game::Game()
 {
@@ -42,7 +42,6 @@ Game::~Game()
 	delete collisionManager;
 	delete stateMachine;
 	delete renderer;
-	delete camera;
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -98,12 +97,12 @@ void Game::initWindow()
 	glfwSetMouseButtonCallback(window, &InputManager::mouseButtonCallback);
 
 
-	onEscapeDelegate = Delegate::makeDelegate<Game, &Game::onEscape>(this);
+	onEscapeDelegate = Delegate<InputInfo>::makeDelegate<Game, &Game::onEscape>(this);
 	InputManager::addKeyboardCallback(GLFW_KEY_ESCAPE, &onEscapeDelegate);
 
 }
 
-void Game::onEscape(delegateInfo &info)
+void Game::onEscape(InputInfo &info)
 {
 	shouldQuit = true;
 }

@@ -1,7 +1,8 @@
 #pragma once
 #include "State.h"
+#include "Transform.h"
+#include "Renderer.h"
 
-class UITextComponent;
 class EntityManager;
 
 class PongState :
@@ -16,10 +17,12 @@ public:
 	void onUpdate(float deltaTime) override;
 
 private:
-
-	UITextComponent *textComponent = nullptr;
 	EntityManager *entityManager = nullptr;
 
 	unsigned int playerScore = 0, botScore = 0;
+	
+	float rotationAccumulator = .0f;
+	ModelHandle modelHandle;
+	Transform modelTransform;
 };
 

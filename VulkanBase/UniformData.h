@@ -14,9 +14,10 @@ struct UniformBufferObject
 
 struct uniformDataCreationInfo
 {
+	uniformDataCreationInfo(SwapChainData &givenSwapChainData) : swapChainData(givenSwapChainData){}
 	VkDevice device;
 	VkPhysicalDevice physicalDevice;
-	SwapChainData *swapChainData; 
+	SwapChainData &swapChainData; 
 	VkDescriptorSetLayout descriptorSetLayout;
 	TextureData texture;
 };
@@ -29,28 +30,29 @@ public:
 	{
 		createData(creationInfo.device, creationInfo.physicalDevice, creationInfo.swapChainData, creationInfo.descriptorSetLayout, creationInfo.texture);
 	}
+	UniformData() = default;
 
-	void createData(VkDevice device, VkPhysicalDevice physicalDevice, SwapChainData *swapChainData, VkDescriptorSetLayout descriptorSetLayout, TextureData texture)
+	void createData(VkDevice device, VkPhysicalDevice physicalDevice, const SwapChainData &swapChainData, VkDescriptorSetLayout descriptorSetLayout, const TextureData &texture)
 	{
 		createUniformBuffers(device, physicalDevice, swapChainData);
 		createDescriptorPool(device, swapChainData);
 		createDescriptorSets(device, swapChainData, descriptorSetLayout, texture);
 	}
 
-	void createDescriptorPool(VkDevice device, SwapChainData *swapChainData/*, std::vector<uniformDescription> uniformDescriptions*/)
+	void createDescriptorPool(VkDevice device, const SwapChainData &swapChainData/*, std::vector<uniformDescription> uniformDescriptions*/)
 	{
 		constexpr uint32_t poolSizesCount = 2;
 		VkDescriptorPoolSize *poolSizes = new VkDescriptorPoolSize[poolSizesCount];
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainData->imagesCount);
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainData.imagesCount);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainData->imagesCount);
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainData.imagesCount);
 
 		VkDescriptorPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = poolSizesCount;
 		poolInfo.pPoolSizes = poolSizes;
-		poolInfo.maxSets = swapChainData->imagesCount;
+		poolInfo.maxSets = swapChainData.imagesCount;
 
 		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
@@ -58,12 +60,12 @@ public:
 		delete[] poolSizes;
 	}
 
-	void createUniformBuffers(VkDevice device, VkPhysicalDevice physicalDevice, SwapChainData *swapChainData) {
+	void createUniformBuffers(VkDevice device, VkPhysicalDevice physicalDevice, const SwapChainData &swapChainData) {
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-		uniformBuffers.resize(swapChainData->imagesCount);
-		uniformBuffersMemory.resize(swapChainData->imagesCount);
+		uniformBuffers.resize(swapChainData.imagesCount);
+		uniformBuffersMemory.resize(swapChainData.imagesCount);
 
-		for (size_t i = 0; i < swapChainData->imagesCount; i++) {
+		for (size_t i = 0; i < swapChainData.imagesCount; i++) {
 			bufferCreationInfo creationInfo;
 			creationInfo.size = bufferSize;
 			creationInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -74,10 +76,10 @@ public:
 		}
 	}
 
-	void createDescriptorSets(VkDevice device, SwapChainData *swapChainData, VkDescriptorSetLayout descriptorSetLayout, TextureData &texture)
+	void createDescriptorSets(VkDevice device, const SwapChainData &swapChainData, VkDescriptorSetLayout descriptorSetLayout, const TextureData &texture)
 	{
 		std::vector<VkDescriptorSetLayout> layouts;
-		for (unsigned int i = 0; i < swapChainData->imagesCount; i++)
+		for (unsigned int i = 0; i < swapChainData.imagesCount; i++)
 		{
 			layouts.push_back(descriptorSetLayout);
 		}
@@ -85,16 +87,16 @@ public:
 		VkDescriptorSetAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainData->imagesCount);
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainData.imagesCount);
 		allocInfo.pSetLayouts = layouts.data();
 
-		descriptorSets.resize(swapChainData->imagesCount);
+		descriptorSets.resize(swapChainData.imagesCount);
 		if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate descriptor sets!");
 		}
-		descriptorSets.resize(swapChainData->imagesCount);
+		descriptorSets.resize(swapChainData.imagesCount);
 
-		for (size_t i = 0; i < swapChainData->imagesCount; i++)
+		for (size_t i = 0; i < swapChainData.imagesCount; i++)
 		{
 
 			VkDescriptorBufferInfo bufferInfo = {};

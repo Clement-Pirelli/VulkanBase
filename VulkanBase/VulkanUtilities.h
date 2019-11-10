@@ -16,13 +16,6 @@ struct bufferCreationInfo
 	VkPhysicalDevice physicalDevice;
 };
 
-//class VkUtils
-//{
-//
-//private:
-//	VkUtils(){};
-//};
-
 template <class T>
 static T min(const T &a, const T &b)
 {
@@ -46,7 +39,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 #pragma endregion
 
 
-VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
 void readFile(const std::string& filename, std::vector<char> *buffer);
 

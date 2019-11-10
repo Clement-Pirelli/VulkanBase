@@ -15,7 +15,6 @@ struct textureCreationInfo
 	VkQueue graphicsQueue;
 	VkFormat format;
 	VkImageAspectFlags aspectFlags;
-	const char *path;
 	bool hasSampler;
 };
 
@@ -24,7 +23,11 @@ class TextureData
 public:
 
 	TextureData(){}
-	TextureData(textureCreationInfo creationInfo);
+	TextureData(textureCreationInfo creationInfo, std::string path);
+
+	static TextureData create(std::string name);
+
+	static void destroy(TextureData &givenTextureData);
 
 	void cleanup(VkDevice device);
 
@@ -32,18 +35,19 @@ public:
 
 	void createTextureImage(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue, const char * path);
 
-	void createImage(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+	void createImage(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 
 	void setView(VkImageView givenView);
 
 	VkImage getImage();
 
-	Optional<VkSampler> getSampler();
+	uint32_t getMipLevels() { return mipLevels; }
 
-	VkImageView getView();
+	Optional<VkSampler> getSampler() const;
 
-	static void transitionImageLayout(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	VkImageView getView() const;
 
+	static void transitionImageLayout(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
 private:
 
@@ -52,7 +56,10 @@ private:
 
 	static void copyBufferToImage(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
+	void generateMipmaps(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkImage image, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
+
+	uint32_t mipLevels = 0;
 	VkImage image = nullptr;
 	VkDeviceMemory imageMemory = nullptr;
 	VkImageView view = nullptr;

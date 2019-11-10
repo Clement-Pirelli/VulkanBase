@@ -6,6 +6,8 @@
 #include <vector>
 #include "Vertex.h"
 #include "Utilities.h"
+#include <string>
+
 
 struct VBOCreationInfo
 {
@@ -22,6 +24,11 @@ public:
 	VertexBufferObject(VBOCreationInfo &creationInfo, const char * path);
 	VertexBufferObject(){};
 	~VertexBufferObject(){ vertices.clear(); indices.clear(); vertexBuffer = nullptr; indexBuffer = nullptr; vertexBufferMemory = nullptr; indexBufferMemory = nullptr; };
+
+
+	static VertexBufferObject create(std::string name);
+
+	static void destroy(VertexBufferObject &givenVBO);
 
 	void cleanup(VkDevice device);
 
@@ -43,6 +50,10 @@ public:
 	void setIndices(std::vector<uint32_t> givenIndices);
 
 	box getBox();
+
+
+
+	static void getUnitCube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
 
 private:
 	std::vector<Vertex> vertices;

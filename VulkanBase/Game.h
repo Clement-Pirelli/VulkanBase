@@ -4,16 +4,12 @@
 #include "Delegate.h"
 
 class Renderer;
-class Model;
-class Transform;
-class Camera;
-class UIText;
 class AudioManager;
 class InputManager;
 class EntityManager;
-class UITextComponent;
 class CollisionManager;
 class StateMachine;
+struct InputInfo;
 
 
 class Game
@@ -30,14 +26,13 @@ private:
 	EntityManager *entityManager;
 	CollisionManager *collisionManager;
 	StateMachine *stateMachine;
-	Camera *camera;
 	
 	const unsigned int WIDTH = 800;
 	const unsigned int HEIGHT = 500;
 	GLFWwindow *window;
 	void initWindow();
-	void onEscape(delegateInfo &info);
+	void onEscape(InputInfo &info);
 	bool shouldQuit = false;
-	Delegate onEscapeDelegate;
+	Delegate<InputInfo> onEscapeDelegate;
 };
 

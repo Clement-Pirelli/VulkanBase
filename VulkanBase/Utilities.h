@@ -7,7 +7,6 @@ namespace Util
 		static unsigned int id = 0;
 		return id++;
 	}
-
 }
 
 struct box
@@ -15,3 +14,4 @@ struct box
 	glm::vec3 bottomLeftNear;
 	glm::vec3 topRightFar;
 };
+
