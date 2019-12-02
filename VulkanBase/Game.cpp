@@ -49,10 +49,15 @@ Game::~Game()
 
 int Game::run()
 {
-	auto startTime = std::chrono::high_resolution_clock::now();
+	const auto startTime = std::chrono::high_resolution_clock::now();
 	float deltaTime = .0f;
 	float lastTime = .0f;
 	float time = .0f;
+	
+	//60 FPS
+	const float frameTimer = 1.0f/60.0f;
+	float timeSinceLastFrame = .0f;
+
 	try {
 		while (!shouldQuit) {
 			auto currentTime = std::chrono::high_resolution_clock::now();
@@ -62,9 +67,14 @@ int Game::run()
 			glfwPollEvents();
 			if (glfwWindowShouldClose(window)) break;
 
-			stateMachine->onUpdate(deltaTime);
+			timeSinceLastFrame += deltaTime;
+			if(timeSinceLastFrame >= frameTimer)
+			{
+				stateMachine->onUpdate(timeSinceLastFrame);
+				renderer->render();
+				timeSinceLastFrame = .0f;
+			}
 
-			renderer->render();
 
 			lastTime = time;
 		}

@@ -8,7 +8,7 @@ template<typename T>
 class HandleMap
 {
 public:
-	uint32_t insert(T givenT)
+	uint32_t insert(T &givenT)
 	{
 		uint32_t insertedHandle = lastHandle;
 		data[insertedHandle] = givenT;

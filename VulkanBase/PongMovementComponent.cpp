@@ -3,7 +3,6 @@
 #include "Transform.h"
 #include "Entity.h"
 
-
 PongMovementComponent::PongMovementComponent(PlayerInputComponent *givenInputComponent, float givenSpeed)
 {
 	speed = givenSpeed;

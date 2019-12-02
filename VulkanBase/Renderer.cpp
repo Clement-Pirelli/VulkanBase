@@ -12,7 +12,7 @@
 #include "TextureData.h"
 #include "Model.h"
 #include "Transform.h"
-#include "CameraComponent.h"
+#include "Camera.h"
 #include "Entity.h"
 #include "ResourceProvider.h"
 
@@ -43,25 +43,56 @@ void Renderer::clearModelTextures()
 
 ModelHandle Renderer::createModel(const ShaderHandle &shaderHandle, Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
 {
-	TextureData textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
-	VertexBufferObject vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
+	TextureData &textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
+	VertexBufferObject &vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
 	TextureHandle textureHandle = { textures.insert(textureData) };
-	VBOHandle vboHandle = { vbos.insert(vbo) };
-	Model m;
-	m.color = color;
+	Model m(&vbo);
 	m.textureHandle = textureHandle;
+	m.color = color;
 	uniformDataCreationInfo creationInfo = getUniformDataCreationInfo();
 	creationInfo.texture = textureData;
 	m.uniformData = UniformData(creationInfo);
-	m.vboHandle = vboHandle;
 	m.transform = givenTransform;
-	
+
 	ShaderData &shader = shaderMap[shaderHandle.handle];
 	uint32_t handle = shader.modelMap.insert(m);
 
 	recreateCommandBufferData();
 
-	return ModelHandle{ handle };
+	return ModelHandle{ handle, shaderHandle };
+}
+
+std::vector<ModelHandle> Renderer::createModels(const ShaderHandle & shaderHandle, std::vector<Transform*> givenTransforms, const char * texturePath, const char * meshPath, std::vector<glm::vec4> colors)
+{
+	assert(givenTransforms.size() == colors.size());
+	const size_t modelAmount = givenTransforms.size();
+
+
+	TextureData &textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
+	VertexBufferObject &vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
+	TextureHandle textureHandle = { textures.insert(textureData) };
+	ShaderData &shader = shaderMap[shaderHandle.handle];
+
+	std::vector<ModelHandle> handles;
+	handles.resize(modelAmount);
+
+	Model m(&vbo);
+	m.textureHandle = textureHandle;
+	uniformDataCreationInfo creationInfo = getUniformDataCreationInfo();
+	creationInfo.texture = textureData;
+
+	for(size_t i = 0; i < modelAmount; i++)
+	{
+		m.color = colors[i];
+		m.uniformData = UniformData(creationInfo);
+		m.transform = givenTransforms[i];
+		uint32_t handle = shader.modelMap.insert(m);
+		handles[i] = ModelHandle{ handle, shaderHandle };
+	}
+
+	recreateCommandBufferData();
+
+	return handles;
 }
 
 ShaderHandle Renderer::createShader(const char * fragmentShaderPath, const char * vertexShaderPath)
@@ -77,7 +108,6 @@ ShaderHandle Renderer::createShader(const char * fragmentShaderPath, const char 
 
 void Renderer::clearModelVBOs()
 {
-	vbos.clear();
 	ResourceProvider<VertexBufferObject>::clearResources();
 }
 
@@ -113,18 +143,19 @@ VBOCreationInfo Renderer::getVBOCreationInfo()
 	return creationInfo;
 }
 
-void Renderer::removeModel(const ModelHandle &givenHandle, const ShaderHandle &shaderHandle)
+void Renderer::destroyModel(const ModelHandle &givenHandle)
 {
 	vkDeviceWaitIdle(device);
 
-	ShaderData &shader = shaderMap[shaderHandle.handle];
-
+	ShaderData &shader = shaderMap[givenHandle.shaderHandle.handle];
+	Model model = shader.modelMap[givenHandle.handle];
+	model.uniformData.cleanup(device);
 	shader.modelMap.remove(givenHandle.handle);
 
 	recreateCommandBufferData();
 }
 
-void Renderer::setCamera(CameraComponent *givenCamera)
+void Renderer::setCamera(Camera *givenCamera)
 {
 	currentCamera = givenCamera;
 }
@@ -975,16 +1006,16 @@ void Renderer::onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData 
 {
 	for(auto &modelPair : shader.modelMap.getRawMap())
 	{
-		VertexBufferObject &currentVBO = vbos[modelPair.second.vboHandle.handle];
-		VkBuffer vertexBuffers[] = { currentVBO.getVertexBuffer() };
+		VertexBufferObject *currentVBO = modelPair.second.vbo;
+		VkBuffer vertexBuffers[] = { currentVBO->getVertexBuffer() };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, currentVBO.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, currentVBO->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		//uniforms
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader.pipelineLayout, 0, 1, &modelPair.second.uniformData.getDescriptorSets()->at(i), 0, nullptr);
 
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(currentVBO.getIndices().size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(currentVBO->getIndices().size()), 1, 0, 0, 0);
 	}
 }
 

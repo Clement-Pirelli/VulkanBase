@@ -27,8 +27,8 @@ private:
 	CollisionManager *collisionManager;
 	StateMachine *stateMachine;
 	
-	const unsigned int WIDTH = 800;
-	const unsigned int HEIGHT = 500;
+	const unsigned int WIDTH = 900;
+	const unsigned int HEIGHT = 600;
 	GLFWwindow *window;
 	void initWindow();
 	void onEscape(InputInfo &info);

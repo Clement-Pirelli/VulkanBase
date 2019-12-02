@@ -1,7 +1,8 @@
 #pragma once
 #include "Component.h"
 #include "glm.hpp"
-#include "PlayerInputComponent.h"
+
+class PlayerInputComponent;
 
 class PongMovementComponent : public Component
 {

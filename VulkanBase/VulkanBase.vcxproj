@@ -161,7 +161,7 @@
   <ItemGroup>
     <ClCompile Include="AABBColliderComponent.cpp" />
     <ClCompile Include="AudioManager.cpp" />
-    <ClCompile Include="CameraComponent.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ColliderComponent.cpp" />
     <ClCompile Include="CollisionManager.cpp" />
     <ClCompile Include="Component.cpp" />
@@ -185,7 +185,7 @@
   <ItemGroup>
     <ClInclude Include="AABBColliderComponent.h" />
     <ClInclude Include="AudioManager.h" />
-    <ClInclude Include="CameraComponent.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="ColliderComponent.h" />
     <ClInclude Include="CollisionInfo.h" />
     <ClInclude Include="CollisionManager.h" />

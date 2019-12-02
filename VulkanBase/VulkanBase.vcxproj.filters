@@ -105,7 +105,7 @@
     <ClCompile Include="PongMovementComponent.cpp">
       <Filter>Source Files\Components</Filter>
     </ClCompile>
-    <ClCompile Include="CameraComponent.cpp">
+    <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Components</Filter>
     </ClCompile>
   </ItemGroup>
@@ -194,14 +194,14 @@
     <ClInclude Include="PongMovementComponent.h">
       <Filter>Header Files\Components</Filter>
     </ClInclude>
-    <ClInclude Include="CameraComponent.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
     <ClInclude Include="ResourceProvider.h">
       <Filter>Header Files\Utilities</Filter>
     </ClInclude>
     <ClInclude Include="HandleMap.h">
       <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

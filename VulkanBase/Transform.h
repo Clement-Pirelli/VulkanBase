@@ -65,7 +65,7 @@ private:
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::mat4 localTransform;
-	Transform *parent;
+	Transform *parent = nullptr;
 	std::vector<Transform *> children;
 };
 

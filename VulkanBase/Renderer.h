@@ -18,10 +18,8 @@ class TextureData;
 class VertexBufferObject;
 struct uniformDataCreationInfo;
 struct Model;
-struct SwapChainData;
-struct QueueFamilyIndices;
 class Transform;
-class CameraComponent;
+class Camera;
 struct VBOCreationInfo;
 struct textureCreationInfo;
 
@@ -69,9 +67,12 @@ struct TextureHandle{ uint32_t handle; };
 
 struct VBOHandle{ uint32_t handle; };
 
-struct ModelHandle{ uint32_t handle; };
-
 struct ShaderHandle{ uint32_t handle; };
+
+struct ModelHandle{
+	uint32_t handle;
+	ShaderHandle shaderHandle;
+};
 
 struct ShaderData
 {
@@ -102,6 +103,7 @@ public:
 	void clearModelVBOs();
 
 	ModelHandle createModel(const ShaderHandle &shaderHandle, Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
+	std::vector<ModelHandle> createModels(const ShaderHandle &shaderHandle, std::vector<Transform*> givenTransforms, const char *texturePath, const char *meshPath, std::vector<glm::vec4> colors);
 	ShaderHandle createShader(const char *fragmentShaderPath, const char *vertexShaderPath);
 
 
@@ -111,9 +113,9 @@ public:
 
 	VBOCreationInfo getVBOCreationInfo();
 
-	void removeModel(const ModelHandle &givenHandle, const ShaderHandle &shaderHandle);
+	void destroyModel(const ModelHandle &givenHandle);
 
-	void setCamera(CameraComponent *givenCamera);
+	void setCamera(Camera *givenCamera);
 	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i);
 
 private:
@@ -168,13 +170,12 @@ private:
 	bool framebufferResized = false;
 
 	HandleMap<TextureData> textures;
-	HandleMap<VertexBufferObject> vbos;
 
 	HandleMap<ShaderData> shaderMap;
 
 	TextureData *depthTexture;
 
-	CameraComponent *currentCamera = nullptr;
+	Camera *currentCamera = nullptr;
 #pragma endregion
 
 #pragma region VALIDATION_LAYERS

@@ -1,9 +1,9 @@
 #pragma once
 #include "State.h"
-#include "Transform.h"
 #include "Renderer.h"
 
 class EntityManager;
+class Camera;
 
 class PongState :
 	public State
@@ -19,15 +19,10 @@ public:
 private:
 	EntityManager *entityManager = nullptr;
 
-	unsigned int playerScore = 0, botScore = 0;
-	
-	float rotationAccumulator = .0f;
 	ShaderHandle shaderHandle;
-	ModelHandle modelHandle;
-	Transform modelTransform;
-
-	ShaderHandle shaderHandle2;
-	ModelHandle modelHandle2;
-	Transform modelTransform2;
+	std::vector<ModelHandle> modelHandles;
+	std::vector<Transform*> transforms;
+	Camera *camera = nullptr;
+	Transform *cameraTransform = nullptr;
 };
 
