@@ -13,12 +13,11 @@
 #include "Model.h"
 #include "Transform.h"
 #include "Camera.h"
-#include "Entity.h"
 #include "ResourceProvider.h"
 
 #pragma region PUBLIC
 
-Renderer::Renderer(GLFWwindow *givenWindow){
+Renderer::Renderer(GLFWwindow *givenWindow, glm::vec2 givenResolution) : camera(Transform(), .0f, .0f, .0f,.0f), resolution(givenResolution) {
 	window = givenWindow;
 	physicalDevice = VK_NULL_HANDLE;
 	initVulkan();
@@ -41,7 +40,7 @@ void Renderer::clearModelTextures()
 	ResourceProvider<TextureData>::clearResources();
 }
 
-ModelHandle Renderer::createModel(const ShaderHandle &shaderHandle, Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
+ModelHandle Renderer::createModel(const ShaderHandle &shaderHandle, const Transform &givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
 {
 	TextureData &textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
 	VertexBufferObject &vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
@@ -62,7 +61,12 @@ ModelHandle Renderer::createModel(const ShaderHandle &shaderHandle, Transform *g
 	return ModelHandle{ handle, shaderHandle };
 }
 
-std::vector<ModelHandle> Renderer::createModels(const ShaderHandle & shaderHandle, std::vector<Transform*> givenTransforms, const char * texturePath, const char * meshPath, std::vector<glm::vec4> colors)
+Model &Renderer::getModel(const ModelHandle & handle)
+{
+	return shaderMap[handle.shaderHandle.handle].modelMap[handle.handle];
+}
+
+std::vector<ModelHandle> Renderer::createModels(const ShaderHandle & shaderHandle, std::vector<Transform> &givenTransforms, const char * texturePath, const char * meshPath, std::vector<glm::vec4> colors)
 {
 	assert(givenTransforms.size() == colors.size());
 	const size_t modelAmount = givenTransforms.size();
@@ -155,10 +159,11 @@ void Renderer::destroyModel(const ModelHandle &givenHandle)
 	recreateCommandBufferData();
 }
 
-void Renderer::setCamera(Camera *givenCamera)
+Camera &Renderer::getCamera()
 {
-	currentCamera = givenCamera;
+	return camera;
 }
+
 
 #pragma endregion
 
@@ -971,22 +976,20 @@ void Renderer::updateUniformBuffer(uint32_t currentImage)
 	glm::mat4 projMat = glm::mat4(1.0f);
 	glm::mat4 modelMat = glm::mat4(1.0f);
 
-	UniformBufferObject ubo = {};
-	if (currentCamera != nullptr)
-	{
-		viewMat = currentCamera->getViewMat();
-		projMat = currentCamera->getProjectionMat();
-		//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
-		projMat[1][1] *= -1;
-	}
+	UniformBufferObject ubo;
+	viewMat = camera.getViewMat();
+	projMat = camera.getProjectionMat();
+	//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
+	projMat[1][1] *= -1;
 
 	for(auto &shaderPair : shaderMap.getRawMap())
 		for(auto &modelPair : shaderPair.second.modelMap.getRawMap())
 		{
 			Model &currentModel = modelPair.second;
-			modelMat = currentModel.transform->getGlobalTransform();
+			modelMat = currentModel.transform.getGlobalTransform();
 			ubo.world = projMat * viewMat * modelMat;
 			ubo.color = currentModel.color;
+			ubo.resolution = resolution;
 			void* data;
 			vkMapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
@@ -1182,6 +1185,7 @@ void Renderer::cleanup()
 void Renderer::framebufferResizeCallback(GLFWwindow * window, int width, int height)
 {
 	Renderer *ren = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
+	ren->resolution = glm::vec2(width, height);
 	ren->framebufferResized = true;
 }
 

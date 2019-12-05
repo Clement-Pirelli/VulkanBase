@@ -1,15 +1,13 @@
 #pragma once
 #include "State.h"
 #include "Renderer.h"
-
-class EntityManager;
-class Camera;
+#include "Input.h"
 
 class PongState :
 	public State
 {
 public:
-	PongState(StateMachine *givenStateMachine, EntityManager *givenEntityManager);
+	PongState(StateMachine *givenStateMachine);
 	~PongState();
 
 	void onEnter() override;
@@ -17,12 +15,11 @@ public:
 	void onUpdate(float deltaTime) override;
 
 private:
-	EntityManager *entityManager = nullptr;
-
-	ShaderHandle shaderHandle;
-	std::vector<ModelHandle> modelHandles;
-	std::vector<Transform*> transforms;
-	Camera *camera = nullptr;
+	ShaderHandle shaderHandle = {};
+	std::vector<ModelHandle> modelHandles = {};
 	Transform *cameraTransform = nullptr;
+	Input *input = nullptr;
+	Renderer *renderer = nullptr;
+	float movementSpeed = 3.0f;
 };
 

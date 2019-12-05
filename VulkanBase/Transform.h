@@ -6,6 +6,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include <vector>
 
@@ -23,8 +24,8 @@ public:
 	Transform(Transform *givenParent, glm::vec3 givenScale, glm::vec3 givenPosition, glm::vec3 givenRotation);
 	~Transform();
 
-	glm::mat4 getGlobalTransform();
-	glm::mat4 getLocalTransform();
+	glm::mat4 getGlobalTransform() const;
+	glm::mat4 getLocalTransform() const;
 
 	void setLocalScale(glm::vec3 givenScale);
 	void setLocalPosition(glm::vec3 givenPosition);
@@ -34,13 +35,22 @@ public:
 	void addLocalPosition(glm::vec3 givenPositionDelta);
 	void addLocalRotation(glm::vec3 givenRotationDelta);
 	
-	glm::vec3 getLocalScale();
-	glm::vec3 getLocalPosition();
-	glm::vec3 getLocalRotation();
+	glm::vec3 getLocalScale() const;
+	glm::vec3 getLocalPosition() const;
+	glm::vec3 getLocalRotation() const;
 
-	glm::vec3 getGlobalScale();
-	glm::vec3 getGlobalPosition();
-	glm::vec3 getGlobalRotation();
+	glm::vec3 getGlobalScale() const;
+	glm::vec3 getGlobalPosition() const;
+	glm::vec3 getGlobalRotation() const;
+
+	glm::mat4 getLocalScaleMat() const;
+	glm::mat4 getLocalPositionMat() const;
+	glm::mat4 getLocalRotationMat() const;
+
+	glm::mat4 getGlobalScaleMat() const;
+	glm::mat4 getGlobalPositionMat() const;
+	glm::mat4 getGlobalRotationMat() const;
+
 
 	//remove parent of current transform
 	void unParent();
@@ -61,10 +71,10 @@ private:
 
 	void updateLocalTransform();
 
-	glm::vec3 scale;
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::mat4 localTransform;
+	glm::vec3 scale = {};
+	glm::vec3 position = {};
+	glm::quat rotation = {};
+	glm::mat4 localTransform = {};
 	Transform *parent = nullptr;
 	std::vector<Transform *> children;
 };

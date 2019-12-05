@@ -4,6 +4,9 @@
 layout(binding = 0) uniform UniformBufferObject {
     mat4 world;
 	vec4 color;
+	float time;
+	vec2 mouse;
+	vec2 resolution;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

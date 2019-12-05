@@ -17,6 +17,7 @@ enum INPUT_STATE
 struct InputInfo
 {
 	INPUT_STATE state;
+	int key;
 	int mods;
 };
 
@@ -30,7 +31,7 @@ class InputManager
 public:
 
 	static void addButtonCallback(int givenButton, Delegate<InputInfo> *givenDelegate);
-	static void addKeyboardCallback(int givenKey, Delegate<InputInfo> *givenDelegate);
+	static void addKeyboardCallback(Delegate<InputInfo> *givenDelegate);
 	static void removeButtonCallback(int givenButton, Delegate<InputInfo> *givenDelegate);
 	static void removeKeyboardCallback(int givenKey, Delegate<InputInfo> *givenDelegate);
 	static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
@@ -43,6 +44,6 @@ private:
 	InputManager(){};
 	~InputManager(){};
 	static GLFWwindow *window;
-	static std::unordered_map<int, DelegateVector> keyboardCallbacks;
+	static DelegateVector keyboardCallbacks;
 	static std::unordered_map<int, DelegateVector> mouseCallbacks;
 };

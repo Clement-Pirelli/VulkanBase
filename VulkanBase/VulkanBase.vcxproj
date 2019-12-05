@@ -159,23 +159,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AABBColliderComponent.cpp" />
     <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="ColliderComponent.cpp" />
-    <ClCompile Include="CollisionManager.cpp" />
-    <ClCompile Include="Component.cpp" />
-    <ClCompile Include="Entity.cpp" />
-    <ClCompile Include="EntityManager.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="PlayerInputComponent.cpp" />
-    <ClCompile Include="PongMovementComponent.cpp" />
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="PongState.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="StateMachine.cpp" />
     <ClCompile Include="TextureData.cpp" />
+    <ClCompile Include="Time.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="VertexBufferObject.cpp" />
@@ -183,26 +177,19 @@
     <ClCompile Include="wavreader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AABBColliderComponent.h" />
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="ColliderComponent.h" />
-    <ClInclude Include="CollisionInfo.h" />
-    <ClInclude Include="CollisionManager.h" />
-    <ClInclude Include="Component.h" />
     <ClInclude Include="Delegate.h" />
-    <ClInclude Include="Entity.h" />
-    <ClInclude Include="EntityManager.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="HandleMap.h" />
     <ClInclude Include="InputManager.h" />
-    <ClInclude Include="PlayerInputComponent.h" />
-    <ClInclude Include="PongMovementComponent.h" />
+    <ClInclude Include="Input.h" />
     <ClInclude Include="PongState.h" />
     <ClInclude Include="ResourceProvider.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="State.h" />
     <ClInclude Include="StateMachine.h" />
+    <ClInclude Include="Time.h" />
     <ClInclude Include="UniformData.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Model.h" />

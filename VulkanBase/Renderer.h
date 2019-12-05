@@ -9,6 +9,7 @@
 #include <Vulkan/vulkan.h>
 #include "Optional.h"
 #include "HandleMap.h"
+#include "Camera.h"
 
 struct VkSurfaceCapabilitiesKHR;
 struct VkSurfaceFormatKHR;
@@ -19,7 +20,6 @@ class VertexBufferObject;
 struct uniformDataCreationInfo;
 struct Model;
 class Transform;
-class Camera;
 struct VBOCreationInfo;
 struct textureCreationInfo;
 
@@ -90,7 +90,7 @@ struct ShaderData
 class Renderer {
 public:
 
-	Renderer(GLFWwindow *givenWindow);
+	Renderer(GLFWwindow *givenWindow, glm::vec2 givenResolution);
 
 	~Renderer();
 
@@ -102,21 +102,19 @@ public:
 
 	void clearModelVBOs();
 
-	ModelHandle createModel(const ShaderHandle &shaderHandle, Transform *givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
-	std::vector<ModelHandle> createModels(const ShaderHandle &shaderHandle, std::vector<Transform*> givenTransforms, const char *texturePath, const char *meshPath, std::vector<glm::vec4> colors);
+	ModelHandle createModel(const ShaderHandle &shaderHandle, const Transform &givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
+	Model &getModel(const ModelHandle &handle);
+	std::vector<ModelHandle> createModels(const ShaderHandle &shaderHandle, std::vector<Transform> &givenTransforms, const char *texturePath, const char *meshPath, std::vector<glm::vec4> colors);
 	ShaderHandle createShader(const char *fragmentShaderPath, const char *vertexShaderPath);
 
 
 	uniformDataCreationInfo getUniformDataCreationInfo();
-
 	textureCreationInfo getTextureCreationInfo();
-
 	VBOCreationInfo getVBOCreationInfo();
 
 	void destroyModel(const ModelHandle &givenHandle);
-
-	void setCamera(Camera *givenCamera);
-	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i);
+	
+	Camera &getCamera();
 
 private:
 
@@ -175,7 +173,8 @@ private:
 
 	TextureData *depthTexture;
 
-	Camera *currentCamera = nullptr;
+	Camera camera;
+	glm::vec2 resolution = glm::vec2();
 #pragma endregion
 
 #pragma region VALIDATION_LAYERS
@@ -260,6 +259,7 @@ private:
 
 #pragma endregion
 
+	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i);
 
 	void initVulkan();
 

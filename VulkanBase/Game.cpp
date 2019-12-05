@@ -3,14 +3,9 @@
 #include <iostream>
 #include "Utilities.h"
 #include "glm.hpp"
-#include <chrono>
-#include "Transform.h"
-#include <string>
-#include "AudioManager.h"
+#include "Time.h"
 #include "Singleton.h"
 #include "InputManager.h"
-#include "EntityManager.h"
-#include "CollisionManager.h"
 #include "StateMachine.h"
 #include "PongState.h"
 
@@ -18,28 +13,17 @@
 Game::Game()
 {
 	initWindow();
-	
-	audioManager = new AudioManager();
-	Singleton<AudioManager>::setInstance(audioManager);
 
-	renderer = new Renderer(window);
+	renderer = new Renderer(window, glm::vec2(HEIGHT, WIDTH));
 	Singleton<Renderer>::setInstance(renderer);
 
-	collisionManager = new CollisionManager();
-	Singleton<CollisionManager>::setInstance(collisionManager);
-
-	entityManager = new EntityManager();
-
 	stateMachine = new StateMachine();
-	PongState *p = new PongState(stateMachine, entityManager);
+	PongState *p = new PongState(stateMachine);
 	stateMachine->setFirstState(p);
 }
 
 Game::~Game()
 {
-	delete entityManager;
-	delete audioManager;
-	delete collisionManager;
 	delete stateMachine;
 	delete renderer;
 
@@ -49,19 +33,20 @@ Game::~Game()
 
 int Game::run()
 {
-	const auto startTime = std::chrono::high_resolution_clock::now();
+	const auto startTime = Time::now();
 	float deltaTime = .0f;
 	float lastTime = .0f;
 	float time = .0f;
-	
+
+
 	//60 FPS
-	const float frameTimer = 1.0f/60.0f;
+	constexpr float frameTimer = 1.0f/60.0f;
 	float timeSinceLastFrame = .0f;
 
 	try {
 		while (!shouldQuit) {
-			auto currentTime = std::chrono::high_resolution_clock::now();
-			time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+			auto currentTime = Time::now();
+			time = (currentTime - startTime).asSeconds();
 			deltaTime = time - lastTime;
 
 			glfwPollEvents();
@@ -74,7 +59,6 @@ int Game::run()
 				renderer->render();
 				timeSinceLastFrame = .0f;
 			}
-
 
 			lastTime = time;
 		}
@@ -92,27 +76,28 @@ void Game::initWindow()
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	//for windowed fullscreen : 
+	//reminder for windowed fullscreen : 
 	//const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	//
 	//mode->width;
 	//mode->height;
+
 	window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-	glfwSetWindowAspectRatio(window, 1920, 1080);
+	glfwSetWindowAspectRatio(window, 9, 6);
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, Renderer::framebufferResizeCallback);
 	
 	InputManager::setWindow(window);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetKeyCallback(window, &InputManager::keyboardKeyCallback);
 	glfwSetMouseButtonCallback(window, &InputManager::mouseButtonCallback);
 
-
-	onEscapeDelegate = Delegate<InputInfo>::makeDelegate<Game, &Game::onEscape>(this);
-	InputManager::addKeyboardCallback(GLFW_KEY_ESCAPE, &onEscapeDelegate);
-
+	onEscapeDelegate = Delegate<InputInfo>::makeDelegate<Game, &Game::onKeyPressed>(this);
+	InputManager::addKeyboardCallback(&onEscapeDelegate);
 }
 
-void Game::onEscape(InputInfo &info)
+void Game::onKeyPressed(InputInfo &info)
 {
-	shouldQuit = true;
+	if(info.key == GLFW_KEY_ESCAPE && info.state == INPUT_STATE::RELEASED)
+		shouldQuit = true;
 }

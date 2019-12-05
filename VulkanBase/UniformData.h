@@ -5,21 +5,26 @@
 #include "TextureData.h"
 #include "VulkanUtilities.h"
 #include "Renderer.h"
+#include "InputManager.h"
+#include "Time.h"
 
 struct UniformBufferObject
 {
-	alignas(16) glm::mat4 world;
-	glm::vec4 color;
+	alignas(16) glm::mat4 world = glm::mat4(1.0f);
+	glm::vec4 color = glm::vec4();
+	float time = Time::now().asSeconds();
+	glm::vec2 mouse = (glm::vec2)InputManager::getMousePosition();
+	glm::vec2 resolution = glm::vec2(.0f);
 };
 
 struct uniformDataCreationInfo
 {
 	uniformDataCreationInfo(SwapChainData &givenSwapChainData) : swapChainData(givenSwapChainData){}
-	VkDevice device;
-	VkPhysicalDevice physicalDevice;
-	SwapChainData &swapChainData; 
+	VkDevice device = {};
+	VkPhysicalDevice physicalDevice = {};
+	SwapChainData &swapChainData;
 	VkDescriptorSetLayout descriptorSetLayout;
-	TextureData texture;
+	TextureData texture = {};
 };
 
 class UniformData

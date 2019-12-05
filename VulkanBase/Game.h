@@ -3,14 +3,11 @@
 #include <GLFW/glfw3.h>
 #include "Delegate.h"
 
-class Renderer;
-class AudioManager;
 class InputManager;
 class EntityManager;
-class CollisionManager;
 class StateMachine;
+class Renderer;
 struct InputInfo;
-
 
 class Game
 {
@@ -19,19 +16,23 @@ public:
 	~Game();
 	int run();
 
+
+	static constexpr unsigned int WIDTH = 900;
+	static constexpr unsigned int HEIGHT = 600;
+
+
 private:
-	AudioManager* audioManager;
+
+
 	Renderer *renderer;
 	InputManager *inputManager;
-	EntityManager *entityManager;
-	CollisionManager *collisionManager;
 	StateMachine *stateMachine;
 	
-	const unsigned int WIDTH = 900;
-	const unsigned int HEIGHT = 600;
+
 	GLFWwindow *window;
+
 	void initWindow();
-	void onEscape(InputInfo &info);
+	void onKeyPressed(InputInfo &info);
 	bool shouldQuit = false;
 	Delegate<InputInfo> onEscapeDelegate;
 };

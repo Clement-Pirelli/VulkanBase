@@ -5,7 +5,6 @@
 #include "Transform.h"
 #include "Renderer.h"
 #include "UniformData.h"
-#include <vector>
 
 struct Model
 {
@@ -13,9 +12,9 @@ struct Model
 	Model(){}
 	TextureHandle textureHandle = {};
 	VertexBufferObject *vbo = nullptr;
-	UniformData uniformData;
-	Transform *transform = nullptr;
-	glm::vec4 color;
+	UniformData uniformData = {};
+	Transform transform = Transform();
+	glm::vec4 color = glm::vec4();
 };
 
 #endif
