@@ -7,14 +7,25 @@
 #include "Renderer.h"
 #include "InputManager.h"
 #include "Time.h"
+#include "Lights.h"
 
-struct UniformBufferObject
+constexpr unsigned int maxDirLights = 10;
+constexpr unsigned int maxPointLights = 10;
+
+
+struct alignas(16) UniformBufferObject
 {
-	alignas(16) glm::mat4 world = glm::mat4(1.0f);
+	glm::mat4 world = glm::mat4(1.0f);
+	glm::mat4 camera = glm::mat4(1.0f);
 	glm::vec4 color = glm::vec4();
-	float time = Time::now().asSeconds();
 	glm::vec2 mouse = (glm::vec2)InputManager::getMousePosition();
 	glm::vec2 resolution = glm::vec2(.0f);
+	glm::vec4 cameraPosition = glm::vec4(.0f);
+	alignas(16) DirectionalLight dirLights[maxDirLights];
+	alignas(16) PointLight pointLights[maxPointLights];
+	float time = Time::now().asSeconds();
+	int dirLightAmount = 0;
+	int pointLightAmount = 0;
 };
 
 struct uniformDataCreationInfo
@@ -31,7 +42,7 @@ class UniformData
 {
 public:
 
-	UniformData(uniformDataCreationInfo creationInfo)
+	UniformData(const uniformDataCreationInfo &creationInfo)
 	{
 		createData(creationInfo.device, creationInfo.physicalDevice, creationInfo.swapChainData, creationInfo.descriptorSetLayout, creationInfo.texture);
 	}
@@ -44,7 +55,7 @@ public:
 		createDescriptorSets(device, swapChainData, descriptorSetLayout, texture);
 	}
 
-	void createDescriptorPool(VkDevice device, const SwapChainData &swapChainData/*, std::vector<uniformDescription> uniformDescriptions*/)
+	void createDescriptorPool(VkDevice device, const SwapChainData &swapChainData)
 	{
 		constexpr uint32_t poolSizesCount = 2;
 		VkDescriptorPoolSize *poolSizes = new VkDescriptorPoolSize[poolSizesCount];

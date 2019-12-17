@@ -9,8 +9,8 @@ VkVertexInputBindingDescription Vertex::getBindingDescription() {
 	return bindingDescription;
 }
 
-VkVertexInputAttributeDescription * Vertex::getAttributeDescriptions(unsigned int & outSize) {
-	constexpr uint32_t attributeCount = 2;
+VkVertexInputAttributeDescription * Vertex::getAttributeDescriptions(unsigned int &outSize) {
+	constexpr uint32_t attributeCount = 3;
 	outSize = attributeCount;
 	VkVertexInputAttributeDescription *attributeDescriptions = new VkVertexInputAttributeDescription[attributeCount];
 	attributeDescriptions[0].binding = 0;
@@ -23,6 +23,10 @@ VkVertexInputAttributeDescription * Vertex::getAttributeDescriptions(unsigned in
 	attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
 	attributeDescriptions[1].offset = offsetof(Vertex, texCoord);
 
+	attributeDescriptions[2].binding = 0;
+	attributeDescriptions[2].location = 2;
+	attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attributeDescriptions[2].offset = offsetof(Vertex, normal);
+
 	return attributeDescriptions;
 }
-

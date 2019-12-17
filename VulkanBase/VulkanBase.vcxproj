@@ -165,7 +165,7 @@
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="PongState.cpp" />
+    <ClCompile Include="ExampleState.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="StateMachine.cpp" />
     <ClCompile Include="TextureData.cpp" />
@@ -184,7 +184,8 @@
     <ClInclude Include="HandleMap.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="Input.h" />
-    <ClInclude Include="PongState.h" />
+    <ClInclude Include="ExampleState.h" />
+    <ClInclude Include="Lights.h" />
     <ClInclude Include="ResourceProvider.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="State.h" />

@@ -9,6 +9,7 @@ struct Vertex
 {
 	glm::vec3 pos;
 	glm::vec2 texCoord;
+	glm::vec3 normal;
 
 	static VkVertexInputBindingDescription getBindingDescription();
 

@@ -25,12 +25,6 @@
     <Filter Include="Source Files\Utilities">
       <UniqueIdentifier>{ccbb31b2-32e4-4385-97c5-c5d12f457833}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Entity">
-      <UniqueIdentifier>{0bbef1e3-a640-47a2-9260-8f54ef7e999d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Entity">
-      <UniqueIdentifier>{f5d19025-b77b-42ec-9977-7105e1f1d458}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Components">
       <UniqueIdentifier>{9b67adb3-02fc-4345-bfd1-1ac716830c52}</UniqueIdentifier>
     </Filter>
@@ -78,9 +72,6 @@
     <ClCompile Include="StateMachine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PongState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\Components</Filter>
     </ClCompile>
@@ -89,6 +80,9 @@
     </ClCompile>
     <ClCompile Include="Time.cpp">
       <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="ExampleState.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -146,9 +140,6 @@
     <ClInclude Include="StateMachine.h">
       <Filter>Header Files\States</Filter>
     </ClInclude>
-    <ClInclude Include="PongState.h">
-      <Filter>Header Files\States</Filter>
-    </ClInclude>
     <ClInclude Include="ResourceProvider.h">
       <Filter>Header Files\Utilities</Filter>
     </ClInclude>
@@ -163,6 +154,12 @@
     </ClInclude>
     <ClInclude Include="Time.h">
       <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="ExampleState.h">
+      <Filter>Header Files\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Lights.h">
+      <Filter>Header Files\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

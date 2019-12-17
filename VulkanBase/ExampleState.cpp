@@ -1,4 +1,4 @@
-#include "PongState.h"
+#include "ExampleState.h"
 #include <string>
 #include "glfw3.h"
 #include "Transform.h"
@@ -8,7 +8,7 @@
 #include "Utilities.h"
 
 
-PongState::PongState(StateMachine *givenStateMachine) : State(givenStateMachine)
+ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMachine)
 {
 	constexpr int modelCount = 1000;
 	renderer = Singleton<Renderer>::getInstance();
@@ -18,15 +18,16 @@ PongState::PongState(StateMachine *givenStateMachine) : State(givenStateMachine)
 	std::vector<glm::vec4> colors;
 	colors.resize(modelCount);
 
+	//random placement of models
 	for(int i = 0; i < modelCount; i++)
 	{
 		float scaleScalar = (float)(Util::rand() % 5)*.025f;
 		glm::vec3 scale(scaleScalar, scaleScalar, scaleScalar);
-		glm::vec3 position((float)(Util::rand() % 100), (float)(Util::rand() % 100), (float)(Util::rand() % 20));
+		glm::vec3 position((float)(Util::rand() % 100), (float)(Util::rand() % 100), (float)(Util::rand() % 100));
 		position *= .16f;
 		glm::vec3 rotation((float)(Util::rand() % 360), (float)(Util::rand() % 360), (float)(Util::rand() % 360));
 		transforms[i] = new Transform(scale, position, rotation);
-		colors[i] = glm::vec4((Util::rand() % 100) / 100.0f, (Util::rand() % 100) / 100.0f, (Util::rand() % 100) / 100.0f, 1.0f);
+		colors[i] = glm::vec4((Util::rand() % 100) / 100.0f, (Util::rand() % 100) / 100.0f, (Util::rand() % 100) / 100.0f, 1.0f)*.5f + glm::vec4(1.0f,1.0f,1.0f,1.0f)*.5f;
 	}
 
 	modelHandles = renderer->createModels(shaderHandle, transforms, "_assets/textures/robot.jpg", "_assets/meshes/robot.o", colors);
@@ -34,28 +35,29 @@ PongState::PongState(StateMachine *givenStateMachine) : State(givenStateMachine)
 	//set the camera
 	Transform camTrans = Transform(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(.0f, .0f, 5.0f), glm::vec3(.0f, .0f, .0f));
 	Camera &camera = renderer->getCamera();
-	camera = Camera(camTrans, 9.0f / 6.0f, 90.0f, .01f, 200.0f);
+	camera = Camera(camTrans, 9.0f / 6.0f, 60.0f, .01f, 200.0f);
 	cameraTransform = &camera.getTransform();
 
 	input = new Input(GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_C, GLFW_KEY_X);
+
 }
 
 
-PongState::~PongState()
+ExampleState::~ExampleState()
 {
 	delete input;
 }
 
-void PongState::onEnter()
+void ExampleState::onEnter()
 {
 
 }
 
-void PongState::onExit()
+void ExampleState::onExit()
 {
 }
 
-void PongState::onUpdate(float deltaTime)
+void ExampleState::onUpdate(float deltaTime)
 {
 	input->onUpdate();
 

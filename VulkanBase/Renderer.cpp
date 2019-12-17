@@ -948,7 +948,7 @@ void Renderer::createDescriptorSetLayout()
 	uboLayoutBinding.binding = 0;
 	uboLayoutBinding.descriptorCount = 1;
 	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	uboLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
@@ -981,6 +981,13 @@ void Renderer::updateUniformBuffer(uint32_t currentImage)
 	projMat = camera.getProjectionMat();
 	//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
 	projMat[1][1] *= -1;
+
+	DirectionalLight dirLight = {glm::vec4(1.0f,1.0f,1.0f, .0f), glm::vec4(1.0f,.0f,1.0f,1.0f), 300.0f};
+	ubo.dirLights[1] = dirLight;
+	ubo.dirLightAmount = 1;
+	ubo.camera = projMat * viewMat;
+	ubo.cameraPosition = glm::vec4(camera.getTransform().getGlobalPosition(), 1.0f);
+
 
 	for(auto &shaderPair : shaderMap.getRawMap())
 		for(auto &modelPair : shaderPair.second.modelMap.getRawMap())
@@ -1210,7 +1217,7 @@ void Renderer::createCommandBuffers() {
 
 	constexpr uint32_t clearValuesCount = 2;
 	VkClearValue clearValues[clearValuesCount] = {};
-	clearValues[0].color = { .0f, .0f, .0f, 1.0f };
+	clearValues[0].color = { 1.0f, .0f, .0f, 1.0f };
 	clearValues[1].depthStencil = { 1.0f, 0 };
 
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValuesCount);

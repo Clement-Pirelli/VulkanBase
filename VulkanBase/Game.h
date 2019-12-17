@@ -17,8 +17,12 @@ public:
 	int run();
 
 
-	static constexpr unsigned int WIDTH = 900;
-	static constexpr unsigned int HEIGHT = 600;
+	static constexpr unsigned int WINDOWED_WIDTH = 900;
+	static constexpr unsigned int WINDOWED_HEIGHT = 600;
+
+
+	static constexpr unsigned int FULLSCREEN_WIDTH = 1920;
+	static constexpr unsigned int FULLSCREEN_HEIGHT = 1080;
 
 
 private:
@@ -34,6 +38,7 @@ private:
 	void initWindow();
 	void onKeyPressed(InputInfo &info);
 	bool shouldQuit = false;
+	bool fullScreen = false;
 	Delegate<InputInfo> onEscapeDelegate;
 };
 

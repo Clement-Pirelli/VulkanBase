@@ -3,12 +3,12 @@
 #include "Renderer.h"
 #include "Input.h"
 
-class PongState :
+class ExampleState :
 	public State
 {
 public:
-	PongState(StateMachine *givenStateMachine);
-	~PongState();
+	ExampleState(StateMachine *givenStateMachine);
+	~ExampleState();
 
 	void onEnter() override;
 	void onExit() override;

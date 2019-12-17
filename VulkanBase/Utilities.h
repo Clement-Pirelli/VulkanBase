@@ -1,4 +1,5 @@
 #pragma once
+#include "Time.h"
 
 namespace Util
 {
@@ -8,7 +9,7 @@ namespace Util
 		return id++;
 	}
 
-	static unsigned long x = 123456789, y = 362436069, z = 521288629;
+	static unsigned long x = 123456789, y = 362436069, z = (unsigned long)Time::milliseconds_since_epoch();
 
 	//from : https://stackoverflow.com/questions/1640258/need-a-fast-random-generator-for-c
 	static unsigned long rand() {
