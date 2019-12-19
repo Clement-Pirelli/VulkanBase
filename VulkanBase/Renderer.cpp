@@ -15,6 +15,9 @@
 #include "Camera.h"
 #include "ResourceProvider.h"
 
+#pragma warning(disable: 6385)
+#pragma warning(disable: 26812)
+
 #pragma region PUBLIC
 
 Renderer::Renderer(GLFWwindow *givenWindow, glm::vec2 givenResolution) : camera(Transform(), .0f, .0f, .0f,.0f), resolution(givenResolution) {
@@ -108,6 +111,42 @@ ShaderHandle Renderer::createShader(const char * fragmentShaderPath, const char 
 
 	uint32_t handle = shaderMap.insert(shaderData);
 	return ShaderHandle{ handle };
+}
+
+PointLightHandle Renderer::createPointLight(glm::vec3 position, glm::vec3 color, float intensity)
+{
+	if (pointLMap.count() >= maxPointLights) return PointLightHandle{ invalidHandle };
+	PointLight light = { position, color, intensity };
+	uint32_t handle = pointLMap.insert(light);
+	return PointLightHandle{ handle };
+}
+
+DirLightHandle Renderer::createDirLight(glm::vec3 direction, glm::vec3 color, float intensity)
+{
+	if (dirLMap.count() >= maxPointLights) return DirLightHandle{ invalidHandle };
+	DirLight light = { direction, color, intensity };
+	uint32_t handle = dirLMap.insert(light);
+	return DirLightHandle{ handle };
+}
+
+PointLight& Renderer::getPointLight(PointLightHandle handle)
+{
+	return pointLMap[handle.handle];
+}
+
+DirLight& Renderer::getDirLight(DirLightHandle handle)
+{
+	return dirLMap[handle.handle];
+}
+
+void Renderer::destroyPointLight(PointLightHandle handle)
+{
+	pointLMap.remove(handle.handle);
+}
+
+void Renderer::destroyDirLight(DirLightHandle handle)
+{
+	dirLMap.remove(handle.handle);
 }
 
 void Renderer::clearModelVBOs()
@@ -254,7 +293,10 @@ VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabiliti
 
 }
 
-VkPresentModeKHR Renderer::chooseSwapPresentMode(const VkPresentModeKHR* availablePresentModes, const unsigned int availablePressentModesCount)
+
+VkPresentModeKHR 
+#pragma warning(suppress: 26812) //bs warning
+Renderer::chooseSwapPresentMode(const VkPresentModeKHR* availablePresentModes, const unsigned int availablePressentModesCount)
 {
 	VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
 
@@ -262,7 +304,7 @@ VkPresentModeKHR Renderer::chooseSwapPresentMode(const VkPresentModeKHR* availab
 		VkPresentModeKHR availablePresentMode = availablePresentModes[i];
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			return availablePresentMode;
-		} else if (availablePresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR)
+		} else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
 		{
 			bestMode = availablePresentMode;
 		}
@@ -283,8 +325,8 @@ VkSurfaceFormatKHR Renderer::chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* a
 	return availableFormats[0];
 }
 
-QueueFamilyIndices Renderer::findQueueFamilies(VkPhysicalDevice device) {
-	QueueFamilyIndices indices;
+Renderer::_QueueFamilyIndices Renderer::findQueueFamilies(VkPhysicalDevice device) {
+	_QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -388,12 +430,12 @@ bool Renderer::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
 bool Renderer::isPhysicalDeviceSuitable(VkPhysicalDevice device) 
 {
-	QueueFamilyIndices indices = findQueueFamilies(device);
+	_QueueFamilyIndices indices = findQueueFamilies(device);
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
 
 	bool swapChainAdequate = false;
 	if (extensionsSupported) {
-		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+		_SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
 		swapChainAdequate = swapChainSupport.formatsCount != 0 && swapChainSupport.presentModesCount != 0;
 	}
 
@@ -432,7 +474,7 @@ void Renderer::pickPhysicalDevice()
 
 void Renderer::createLogicalDevice()
 {
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+	_QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -487,9 +529,9 @@ void Renderer::createSurface()
 	}
 }
 
-SwapChainSupportDetails Renderer::querySwapChainSupport(VkPhysicalDevice device) 
+Renderer::_SwapChainSupportDetails Renderer::querySwapChainSupport(VkPhysicalDevice device) 
 {
-	SwapChainSupportDetails details;
+	_SwapChainSupportDetails details;
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
@@ -516,7 +558,7 @@ SwapChainSupportDetails Renderer::querySwapChainSupport(VkPhysicalDevice device)
 
 void Renderer::createSwapChain() 
 {
-	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+	_SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats, swapChainSupport.formatsCount);
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes, swapChainSupport.presentModesCount);
@@ -538,7 +580,7 @@ void Renderer::createSwapChain()
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+	_QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.getValue(), indices.presentFamily.getValue() };
 
 	if (indices.graphicsFamily.getValue() != indices.presentFamily.getValue()) {
@@ -840,7 +882,7 @@ void Renderer::createFramebuffers() {
 
 void Renderer::createCommandPool()
 {
-	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+	_QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -972,31 +1014,45 @@ void Renderer::createDescriptorSetLayout()
 
 void Renderer::updateUniformBuffer(uint32_t currentImage)
 {
-	glm::mat4 viewMat = glm::mat4(1.0f);
-	glm::mat4 projMat = glm::mat4(1.0f);
-	glm::mat4 modelMat = glm::mat4(1.0f);
-
 	UniformBufferObject ubo;
-	viewMat = camera.getViewMat();
-	projMat = camera.getProjectionMat();
+	ubo.resolution = resolution;
+	glm::mat4 projMat = camera.getProjectionMat();
 	//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
 	projMat[1][1] *= -1;
+	ubo.projection = projMat;
+	ubo.view = camera.getViewMat();
+	ubo.dirLightAmount = (int)dirLMap.count();
+	auto dirmap = dirLMap.getRawMap();
+	int i = 0;
+	for(auto &iterator : dirmap)
+	{
+		DirLight& light = iterator.second;
+		ubo.setDirLight(i, light.color, light.intensity, light.direction);
+		i++;
+	}
 
-	DirectionalLight dirLight = {glm::vec4(1.0f,1.0f,1.0f, .0f), glm::vec4(1.0f,.0f,1.0f,1.0f), 300.0f};
-	ubo.dirLights[1] = dirLight;
-	ubo.dirLightAmount = 1;
-	ubo.camera = projMat * viewMat;
 	ubo.cameraPosition = glm::vec4(camera.getTransform().getGlobalPosition(), 1.0f);
-
+	ubo.pointLightAmount = (int)pointLMap.count();
 
 	for(auto &shaderPair : shaderMap.getRawMap())
 		for(auto &modelPair : shaderPair.second.modelMap.getRawMap())
 		{
 			Model &currentModel = modelPair.second;
-			modelMat = currentModel.transform.getGlobalTransform();
-			ubo.world = projMat * viewMat * modelMat;
+			ubo.model = currentModel.transform.getGlobalTransform();
 			ubo.color = currentModel.color;
-			ubo.resolution = resolution;
+
+			//set point lights
+			auto pointmap = pointLMap.getRawMap();
+			int j = 0;
+			for (auto& iterator : pointmap)
+			{
+				PointLight& light = iterator.second;
+				glm::vec3 pointLPos = ubo.projection * ubo.view * glm::vec4(light.position, 1.0f);
+				ubo.setPointLight(j, light.color, light.intensity, pointLPos);
+				j++;
+			}
+
+
 			void* data;
 			vkMapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
@@ -1217,7 +1273,7 @@ void Renderer::createCommandBuffers() {
 
 	constexpr uint32_t clearValuesCount = 2;
 	VkClearValue clearValues[clearValuesCount] = {};
-	clearValues[0].color = { 1.0f, .0f, .0f, 1.0f };
+	clearValues[0].color = { .0f, .0f, .0f, 1.0f };
 	clearValues[1].depthStencil = { 1.0f, 0 };
 
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValuesCount);

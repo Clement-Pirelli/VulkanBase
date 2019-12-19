@@ -7,7 +7,9 @@
 #include "Renderer.h"
 #include "InputManager.h"
 #include "Time.h"
-#include "Lights.h"
+
+
+#pragma warning(disable: 6386)
 
 constexpr unsigned int maxDirLights = 10;
 constexpr unsigned int maxPointLights = 10;
@@ -15,17 +17,39 @@ constexpr unsigned int maxPointLights = 10;
 
 struct alignas(16) UniformBufferObject
 {
-	glm::mat4 world = glm::mat4(1.0f);
-	glm::mat4 camera = glm::mat4(1.0f);
+	glm::mat4 model = glm::mat4(1.0f);								
+	glm::mat4 view = glm::mat4(1.0f);
+	glm::mat4 projection = glm::mat4(1.0f);
 	glm::vec4 color = glm::vec4();
-	glm::vec2 mouse = (glm::vec2)InputManager::getMousePosition();
-	glm::vec2 resolution = glm::vec2(.0f);
+	glm::vec2 mouse = (glm::vec2)InputManager::getMousePosition();	
+	glm::vec2 resolution = glm::vec2(.0f);							
 	glm::vec4 cameraPosition = glm::vec4(.0f);
-	alignas(16) DirectionalLight dirLights[maxDirLights];
-	alignas(16) PointLight pointLights[maxPointLights];
+	glm::vec4 dirLightsDirections[maxDirLights] = {};
+	glm::vec4 pointLightsPositions[maxPointLights] = {};
+	//color also encodes intensity (w)
+	glm::vec4 dirLightsColors[maxDirLights] = {};
+	glm::vec4 pointLightsColors[maxPointLights] = {};
 	float time = Time::now().asSeconds();
 	int dirLightAmount = 0;
 	int pointLightAmount = 0;
+
+	void setDirLight(int index, glm::vec3 color,float intensity, glm::vec3 direction)
+	{
+#ifndef NDEBUG
+		if (index > maxDirLights) return;
+#endif
+		dirLightsColors[index] = glm::vec4(color, intensity);
+		dirLightsDirections[index] = glm::vec4(direction, .0f);
+	}
+
+	void setPointLight(int index, glm::vec3 color, float intensity, glm::vec3 position)
+	{
+#ifndef NDEBUG
+		if (index > maxPointLights) return;
+#endif
+		pointLightsColors[index] = glm::vec4(color, intensity);
+		pointLightsPositions[index] = glm::vec4(position, 1.0f);
+	}
 };
 
 struct uniformDataCreationInfo
@@ -34,7 +58,7 @@ struct uniformDataCreationInfo
 	VkDevice device = {};
 	VkPhysicalDevice physicalDevice = {};
 	SwapChainData &swapChainData;
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout descriptorSetLayout = {};
 	TextureData texture = {};
 };
 
@@ -176,10 +200,10 @@ public:
 	std::vector<VkDeviceMemory> *getUniformBuffersMemory(){ return &uniformBuffersMemory; }
 
 private:
-	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	VkDescriptorPool descriptorPool = {};
+	std::vector<VkDescriptorSet> descriptorSets = {};
+	std::vector<VkBuffer> uniformBuffers = {};
+	std::vector<VkDeviceMemory> uniformBuffersMemory = {};
 };
 
 #endif // !UNIFORMDATA_DEFINED

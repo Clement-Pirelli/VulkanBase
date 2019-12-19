@@ -22,7 +22,7 @@ public:
 
 private:
 
-	T value;
-	bool set;
+	T value = {};
+	bool set = false;
 
 };

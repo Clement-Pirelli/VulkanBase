@@ -10,6 +10,7 @@
 #include "Optional.h"
 #include "HandleMap.h"
 #include "Camera.h"
+#pragma warning(disable: 26812)
 
 struct VkSurfaceCapabilitiesKHR;
 struct VkSurfaceFormatKHR;
@@ -23,26 +24,7 @@ class Transform;
 struct VBOCreationInfo;
 struct textureCreationInfo;
 
-#pragma region STRUCTS
-
-struct QueueFamilyIndices
-{
-	Optional<uint32_t> graphicsFamily;
-	Optional<uint32_t> presentFamily;
-
-	bool isComplete() {
-		return graphicsFamily.isSet() && presentFamily.isSet();
-	}
-};
-
-struct SwapChainSupportDetails
-{
-	VkSurfaceCapabilitiesKHR capabilities;
-	unsigned int formatsCount = 0;
-	VkSurfaceFormatKHR* formats = nullptr;
-	unsigned int presentModesCount = 0;
-	VkPresentModeKHR* presentModes = nullptr;
-};
+#pragma region PUBLIC STRUCTS
 
 struct SwapChainData
 {
@@ -53,8 +35,8 @@ struct SwapChainData
 	unsigned int imagesCount = 0;
 	VkImage *images = nullptr;
 	VkImageView *imageViews = nullptr;
-	VkFormat imageFormat;
-	VkExtent2D extent;
+	VkFormat imageFormat = {};
+	VkExtent2D extent = {};
 
 	~SwapChainData()
 	{
@@ -62,6 +44,13 @@ struct SwapChainData
 		if (imageViews != nullptr) delete[] imageViews;
 	}
 };
+
+
+template<typename T> 
+bool isHandleValid(const T &handle)
+{
+	return handle.handle != invalidHandle;
+}
 
 struct TextureHandle{ uint32_t handle; };
 
@@ -74,15 +63,23 @@ struct ModelHandle{
 	ShaderHandle shaderHandle;
 };
 
-struct ShaderData
+struct PointLight
 {
-	HandleMap<Model> modelMap;
-	VkPipeline graphicsPipeline;
-	VkPipelineLayout pipelineLayout;
-
-	const char *vertexPath = "";
-	const char *fragmentPath = "";
+	glm::vec3 position;
+	glm::vec3 color;
+	float intensity;
 };
+
+struct DirLight
+{
+	glm::vec3 direction;
+	glm::vec3 color;
+	float intensity;
+};
+
+struct PointLightHandle { uint32_t handle; };
+
+struct DirLightHandle { uint32_t handle; };
 
 #pragma endregion
 
@@ -106,7 +103,14 @@ public:
 	Model &getModel(const ModelHandle &handle);
 	std::vector<ModelHandle> createModels(const ShaderHandle &shaderHandle, std::vector<Transform> &givenTransforms, const char *texturePath, const char *meshPath, std::vector<glm::vec4> colors);
 	ShaderHandle createShader(const char *fragmentShaderPath, const char *vertexShaderPath);
+	
+	PointLightHandle createPointLight(glm::vec3 position, glm::vec3 color, float intensity);
+	DirLightHandle createDirLight(glm::vec3 direction, glm::vec3 color, float intensity);
+	PointLight &getPointLight(PointLightHandle handle);
+	DirLight &getDirLight(DirLightHandle handle);
 
+	void destroyPointLight(PointLightHandle handle);
+	void destroyDirLight(DirLightHandle handle);
 
 	uniformDataCreationInfo getUniformDataCreationInfo();
 	textureCreationInfo getTextureCreationInfo();
@@ -117,6 +121,41 @@ public:
 	Camera &getCamera();
 
 private:
+#pragma region PRIVATE STRUCTS
+
+	struct _QueueFamilyIndices
+	{
+		Optional<uint32_t> graphicsFamily;
+		Optional<uint32_t> presentFamily;
+
+		bool isComplete() {
+			return graphicsFamily.isSet() && presentFamily.isSet();
+		}
+	};
+
+
+	struct _SwapChainSupportDetails
+	{
+		VkSurfaceCapabilitiesKHR capabilities = {};
+		unsigned int formatsCount = 0;
+		VkSurfaceFormatKHR* formats = nullptr;
+		unsigned int presentModesCount = 0;
+		VkPresentModeKHR* presentModes = nullptr;
+	};
+
+	struct ShaderData
+	{
+		HandleMap<Model> modelMap = {};
+		VkPipeline graphicsPipeline = {};
+		VkPipelineLayout pipelineLayout = {};
+
+		const char* vertexPath = "";
+		const char* fragmentPath = "";
+	};
+
+#pragma endregion
+
+
 
 #pragma region VARIABLES
 
@@ -171,6 +210,9 @@ private:
 
 	HandleMap<ShaderData> shaderMap;
 
+	HandleMap<PointLight> pointLMap;
+	HandleMap<DirLight> dirLMap;
+
 	TextureData *depthTexture;
 
 	Camera camera;
@@ -195,7 +237,7 @@ private:
 
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* availableFormats, const unsigned int availableFormatsCount);
 
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+	_QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
 	void createInstance();
 
@@ -215,7 +257,7 @@ private:
 
 #pragma region SWAP_CHAIN
 
-	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+	_SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
 	void createSwapChain();
 

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include "Singleton.h"
 #include "Renderer.h"
+#include <stdexcept>
+#pragma warning(disable: 26812)
 
 TextureData::TextureData(textureCreationInfo creationInfo, std::string path)
 {

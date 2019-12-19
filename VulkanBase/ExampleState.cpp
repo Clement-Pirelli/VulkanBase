@@ -40,6 +40,12 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 
 	input = new Input(GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_C, GLFW_KEY_X);
 
+	dirLightHandle = renderer->createDirLight(glm::vec3(.0f,-1.0f,.0f), glm::vec3(1.0f,.8f,.6f), 1.0f);
+	assert(isHandleValid(dirLightHandle));
+
+	pointLightHandle = renderer->createPointLight(glm::vec3(.0f,.0f,.0f), glm::vec3(.1f,.2f,.1f), 1.0f);
+
+	renderer->createDirLight(glm::vec3(.0f, -1.0f, .0f), glm::vec3(1.0f, .4f, 1.0f), 1.0f);
 }
 
 
@@ -66,7 +72,13 @@ void ExampleState::onUpdate(float deltaTime)
 	cameraTransform->addLocalRotation(glm::vec3(.0f, mouseDelta.x, .0f)*deltaTime);
 	cameraTransform->addLocalRotation(glm::vec3(mouseDelta.y, .0f, .0f)*deltaTime);
 
+	//DirLight &dl = renderer->getDirLight(dirLightHandle);
+	//dl.intensity = .5f + .5f* abs(sin(Time::now().asSeconds()));
 
+	PointLight& pl = renderer->getPointLight(pointLightHandle);
+	float sway = sin(Time::now().asSeconds()*.5f) * 20.0f * .16f;
+	pl.position = glm::vec3(50.0f, 50.0f, 50.0f) * .16f;
+	pl.position.x += sway;
 	//keyboard movement
 	glm::vec3 inputDir = input->getInputDirection();
 	
@@ -74,13 +86,6 @@ void ExampleState::onUpdate(float deltaTime)
 	glm::vec3 cameraRight = camera.getRight(), 
 		cameraBackward = camera.getBackward(), 
 		cameraUp = camera.getUp();
-
-	//cameraRight.y = .0f;
-	//cameraRight = glm::normalize(cameraRight);
-	//cameraUp.z = .0f;
-	//cameraUp = glm::normalize(cameraUp);
-	//cameraBackward.y = .0f;
-	//cameraBackward = glm::normalize(cameraBackward);
 	
 
 	glm::vec3 cameraInputDir = inputDir.z * cameraBackward + inputDir.y * cameraUp + inputDir.x * cameraRight;

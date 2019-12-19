@@ -107,6 +107,8 @@ RECENT REVISION HISTORY:
 	Blazej Dariusz Roszkowski                                     github:Michaelangel007
 */
 
+#pragma warning( disable : 26451)
+
 #ifndef STBI_INCLUDE_STB_IMAGE_H
 #define STBI_INCLUDE_STB_IMAGE_H
 

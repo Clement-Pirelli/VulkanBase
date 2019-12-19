@@ -6,6 +6,7 @@
 #include "VulkanUtilities.h"
 #include "Vulkan/vulkan.h"
 #include "Optional.h"
+#include <string>
 
 struct textureCreationInfo
 {

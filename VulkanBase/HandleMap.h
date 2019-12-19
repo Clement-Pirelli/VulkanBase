@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <unordered_map>
 
+constexpr uint32_t invalidHandle = UINT32_MAX;
+
 template<typename T>
 class HandleMap
 {
@@ -13,6 +15,7 @@ public:
 		uint32_t insertedHandle = lastHandle;
 		data[insertedHandle] = givenT;
 		lastHandle++;
+		if (lastHandle == invalidHandle) lastHandle++;
 		return insertedHandle;
 	}
 
@@ -29,7 +32,12 @@ public:
 	void clear()
 	{
 		lastHandle = 0;
-		data.empty();
+		data.clear();
+	}
+
+	size_t count()
+	{
+		return data.size();
 	}
 
 	std::unordered_map<uint32_t, T> &getRawMap(){ return data; }
