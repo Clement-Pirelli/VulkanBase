@@ -10,6 +10,7 @@
 #include "Optional.h"
 #include "HandleMap.h"
 #include "Camera.h"
+#include "TextureData.h"
 #pragma warning(disable: 26812)
 
 struct VkSurfaceCapabilitiesKHR;
@@ -155,8 +156,6 @@ private:
 
 #pragma endregion
 
-
-
 #pragma region VARIABLES
 
 	GLFWwindow *window;
@@ -213,7 +212,8 @@ private:
 	HandleMap<PointLight> pointLMap;
 	HandleMap<DirLight> dirLMap;
 
-	TextureData *depthTexture;
+	TextureData depthTexture;
+	TextureData normalTexture;
 
 	Camera camera;
 	glm::vec2 resolution = glm::vec2();
@@ -300,6 +300,10 @@ private:
 	void createDepthResources();
 
 #pragma endregion
+#pragma region NORMAL_TEXTURE
+	void createNormalResources();
+#pragma endregion
+
 
 	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i);
 

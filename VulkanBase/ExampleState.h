@@ -21,7 +21,5 @@ private:
 	Input *input = nullptr;
 	Renderer *renderer = nullptr;
 	float movementSpeed = 3.0f;
-	DirLightHandle dirLightHandle = {};
-	PointLightHandle pointLightHandle = {};
 };
 

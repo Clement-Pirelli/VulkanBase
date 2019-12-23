@@ -7,7 +7,7 @@
 #include "Renderer.h"
 #include "InputManager.h"
 #include "Time.h"
-
+#include <stdexcept>
 
 #pragma warning(disable: 6386)
 

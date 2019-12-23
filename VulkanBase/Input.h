@@ -34,8 +34,8 @@ public:
 	static void setMouseSensitivity(float givenSensitivity);
 
 private:
-	bool input[DIRECTION::COUNT];
-	int inputKeys[DIRECTION::COUNT];
+	bool input[DIRECTION::COUNT] = {};
+	int inputKeys[DIRECTION::COUNT] = {};
 	Delegate<InputInfo> inputCallback;
 
 	glm::dvec2 lastMousePos = glm::vec2(.0f);

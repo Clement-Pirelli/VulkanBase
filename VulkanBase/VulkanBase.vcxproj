@@ -103,7 +103,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDIr)\VulkanBase\Dependencies;$(SolutionDIr)\VulkanBase\Dependencies\Vulkan;$(SolutionDIr)\VulkanBase\Dependencies\glm;$(SolutionDIr)\VulkanBase\Dependencies\GLFW;$(SolutionDir)\VulkanBase\Dependencies\openal-soft-1.19.1\include\AL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -145,7 +145,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDIr)\VulkanBase\Dependencies;$(SolutionDIr)\VulkanBase\Dependencies\Vulkan;$(SolutionDIr)\VulkanBase\Dependencies\glm;$(SolutionDIr)\VulkanBase\Dependencies\GLFW;$(SolutionDir)\VulkanBase\Dependencies\openal-soft-1.19.1\include\AL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

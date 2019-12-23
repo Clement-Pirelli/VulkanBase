@@ -9,7 +9,6 @@
 #include "UniformData.h"
 #include "VertexBufferObject.h"
 #include "UniformData.h"
-#include "TextureData.h"
 #include "Model.h"
 #include "Transform.h"
 #include "Camera.h"
@@ -295,7 +294,7 @@ VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabiliti
 
 
 VkPresentModeKHR 
-#pragma warning(suppress: 26812) //bs warning
+#pragma warning(suppress: 26812)
 Renderer::chooseSwapPresentMode(const VkPresentModeKHR* availablePresentModes, const unsigned int availablePressentModesCount)
 {
 	VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
@@ -640,7 +639,7 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void Renderer::populateShaderData(ShaderData &shaderData){
+void Renderer::populateShaderData(ShaderData& shaderData) {
 	std::vector<char> vertShaderCode;
 	readFile(shaderData.vertexPath, vertShaderCode);
 	std::vector<char> fragShaderCode;
@@ -669,7 +668,7 @@ void Renderer::populateShaderData(ShaderData &shaderData){
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
 	unsigned int attributeDescriptionsCount;
-	VkVertexInputAttributeDescription *attributeDescriptions = Vertex::getAttributeDescriptions(attributeDescriptionsCount);
+	VkVertexInputAttributeDescription* attributeDescriptions = Vertex::getAttributeDescriptions(attributeDescriptionsCount);
 
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptionsCount);
@@ -736,8 +735,10 @@ void Renderer::populateShaderData(ShaderData &shaderData){
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.attachmentCount = 2;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachments[2] = { colorBlendAttachment ,colorBlendAttachment };
+	colorBlending.pAttachments = colorBlendAttachments;
 	colorBlending.blendConstants[0] = 0.0f; // Optional
 	colorBlending.blendConstants[1] = 0.0f; // Optional
 	colorBlending.blendConstants[2] = 0.0f; // Optional
@@ -825,10 +826,26 @@ void Renderer::createRenderPass()
 	depthAttachmentRef.attachment = 1;
 	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentDescription normalAttachment = {};
+	normalAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
+	normalAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	normalAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	normalAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	normalAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	normalAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	normalAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	normalAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+
+	VkAttachmentReference normalAttachmentRef = {};
+	normalAttachmentRef.attachment = 2;
+	normalAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.colorAttachmentCount = 2;
+	VkAttachmentReference refs[2] = { colorAttachmentRef, normalAttachmentRef };
+	subpass.pColorAttachments = refs;
 	subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
 	VkSubpassDependency dependency = {};
@@ -839,8 +856,8 @@ void Renderer::createRenderPass()
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	constexpr uint32_t attachmentsCount = 2;
-	VkAttachmentDescription attachments[attachmentsCount] = { colorAttachment, depthAttachment };
+	constexpr uint32_t attachmentsCount = 3;
+	VkAttachmentDescription attachments[attachmentsCount] = { colorAttachment, depthAttachment, normalAttachment };
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentsCount);
@@ -857,19 +874,20 @@ void Renderer::createRenderPass()
 
 void Renderer::createFramebuffers() {
 	swapChainFramebuffers.resize(swapChainData.imagesCount);
-	constexpr uint32_t attachmentsCount = 2;
+	constexpr uint32_t attachmentsCount = 3;
 	for (size_t i = 0; i < swapChainData.imagesCount; i++) {
 
-		VkImageView attachments[attachmentsCount] = {
+		VkImageView attachmentViews[attachmentsCount] = {
 			swapChainData.imageViews[i],
-			depthTexture->getView()
+			depthTexture.getView(),
+			normalTexture.getView()
 		};
 
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = renderPass;
 		framebufferInfo.attachmentCount = attachmentsCount;
-		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.pAttachments = attachmentViews;
 		framebufferInfo.width = swapChainData.extent.width;
 		framebufferInfo.height = swapChainData.extent.height;
 		framebufferInfo.layers = 1;
@@ -922,8 +940,8 @@ void Renderer::createSyncObjects()
 
 void Renderer::cleanupSwapChain()
 {
-	depthTexture->cleanup(device);
-	delete depthTexture;
+	depthTexture.cleanup(device);
+	normalTexture.cleanup(device);
 
 	for (unsigned int i = 0; i < swapChainFramebuffers.size(); i++) {
 		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
@@ -974,6 +992,7 @@ void Renderer::recreateSwapChain(){
 		populateShaderData(shaderPair.second);
 	}
 	createDepthResources();
+	createNormalResources();
 	createFramebuffers();
 	for (auto &shaderPair : shaderMap.getRawMap())
 		for (auto &modelPair : shaderPair.second.modelMap.getRawMap())
@@ -1096,9 +1115,8 @@ VkFormat Renderer::findSupportedFormat(const std::vector<VkFormat>& candidates, 
 		} else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
 			return candidates[i];
 		}
-
-		throw std::runtime_error("failed to find supported format!");
 	}
+	throw std::runtime_error("failed to find supported format!");
 
 	return VkFormat::VK_FORMAT_UNDEFINED;
 }
@@ -1114,8 +1132,7 @@ VkFormat Renderer::findDepthFormat() {
 void Renderer::createDepthResources()
 {
 	VkFormat depthFormat = findDepthFormat();
-	depthTexture = new TextureData();
-	depthTexture->createImage(
+	depthTexture.createImage(
 		device,
 		physicalDevice,
 		swapChainData.extent.width,
@@ -1123,11 +1140,33 @@ void Renderer::createDepthResources()
 		1,
 		depthFormat,
 		VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	depthTexture->setView(createImageView(device, depthTexture->getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1));
-	TextureData::transitionImageLayout(device, commandPool, graphicsQueue, depthTexture->getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+	depthTexture.setView(createImageView(device, depthTexture.getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1));
+	depthTexture.createTextureSampler(device);
+	TextureData::transitionImageLayout(device, commandPool, graphicsQueue, depthTexture.getImage(), depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+}
+
+void Renderer::createNormalResources()
+{
+	const VkFormat normalFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	
+	normalTexture.createImage(
+		device,
+		physicalDevice,
+		swapChainData.extent.width,
+		swapChainData.extent.height,
+		1,
+		normalFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+	);
+
+	normalTexture.setView(createImageView(device, normalTexture.getImage(), normalFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1));
+	normalTexture.createTextureSampler(device);
+	TextureData::transitionImageLayout(device, commandPool, graphicsQueue, normalTexture.getImage(), normalFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 }
 
 void Renderer::initVulkan() {
@@ -1142,6 +1181,7 @@ void Renderer::initVulkan() {
 	createDescriptorSetLayout();
 	createCommandPool();
 	createDepthResources();
+	createNormalResources();
 	createFramebuffers();
 	createSyncObjects();
 	createCommandBuffers();
@@ -1271,10 +1311,11 @@ void Renderer::createCommandBuffers() {
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = swapChainData.extent;
 
-	constexpr uint32_t clearValuesCount = 2;
+	constexpr uint32_t clearValuesCount = 3;
 	VkClearValue clearValues[clearValuesCount] = {};
 	clearValues[0].color = { .0f, .0f, .0f, 1.0f };
 	clearValues[1].depthStencil = { 1.0f, 0 };
+	clearValues[2].color = {.0f,.0f,.0f};
 
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValuesCount);
 	renderPassInfo.pClearValues = clearValues;
