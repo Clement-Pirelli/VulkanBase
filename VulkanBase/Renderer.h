@@ -212,8 +212,6 @@ private:
 	HandleMap<PointLight> pointLMap;
 	HandleMap<DirLight> dirLMap;
 
-	TextureData depthTexture;
-	TextureData normalTexture;
 
 	Camera camera;
 	glm::vec2 resolution = glm::vec2();
@@ -292,18 +290,43 @@ private:
 
 	void createCommandBuffers();
 
-#pragma region DEPTH_TEXTURE
+#pragma region TEXTURES
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	VkFormat findDepthFormat();
 
-	void createDepthResources();
+	void createGBufferResources();
 
 #pragma endregion
-#pragma region NORMAL_TEXTURE
-	void createNormalResources();
-#pragma endregion
 
+#pragma region SSAO
+	struct SSAOResources
+	{
+		std::vector<std::pair<glm::vec3, glm::vec2>> quadVertices = {};
+		VkPipeline pipeline = {};
+		VkPipelineLayout pipelineLayout = {};
+		VkRenderPass renderPass = {};
+		std::vector<VkFramebuffer> frameBuffers = {};
+		VkDescriptorSetLayout descriptorSetLayout = {};
+		std::vector<VkDescriptorSet> descriptorSets = {};
+		VkDescriptorPool descriptorPool = {};
+	} ssaoResources;
+
+	struct GBuffer
+	{
+		TextureData colorTexture;
+		TextureData depthTexture;
+		TextureData normalTexture;
+		TextureData positionTexture;
+		VkSampler sampler;
+	} gBuffer;
+	void populateGBufferResource(TextureData& resource, VkFormat format, VkImageAspectFlagBits aspectFlagBits, VkImageUsageFlagBits usageFlagBits, VkImageLayout endLayout);
+
+	void createSSAOShader();
+
+	void createSSAODescriptorSets();
+
+#pragma endregion
 
 	void onCreateCommandBuffers(VkCommandBuffer commandBuffer, ShaderData &shader, unsigned int i);
 

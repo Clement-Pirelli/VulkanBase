@@ -12,15 +12,15 @@
 ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMachine)
 {
 	renderer = Singleton<Renderer>::getInstance();
-	shaderHandle = renderer->createShader("shaders/frag.spv", "shaders/vert.spv");
+	shaderHandle = renderer->createShader("shaders/gbuffer/frag.spv", "shaders/gbuffer/vert.spv");
 
 	//models
 
 	modelHandles.resize(2);
 	Transform lionTransform = Transform(glm::vec3(.01f, .01f, .01f), glm::vec3(.0f, .0f, .0f), glm::vec3(.0f, .0f, .0f));
-	modelHandles[0] = renderer->createModel(shaderHandle, lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	modelHandles[0] = renderer->createModel(shaderHandle, lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(1.0f, .0f, 1.0f, 1.0f));
 	Transform planeTransform = Transform(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(.0f, .0f, .0f), glm::vec3(.0f, .0f, .0f));
-	modelHandles[1] = renderer->createModel(shaderHandle, planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	modelHandles[1] = renderer->createModel(shaderHandle, planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, .0f, 1.0f));
 
 	//set the camera
 	Transform camTrans = Transform(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(.0f, 1.0f, 5.0f), glm::vec3(.0f, .0f, .0f));

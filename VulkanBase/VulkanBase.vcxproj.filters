@@ -159,8 +159,4 @@
       <Filter>Header Files\States</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
-  </ItemGroup>
 </Project>
