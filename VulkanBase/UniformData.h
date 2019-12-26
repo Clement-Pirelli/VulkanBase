@@ -11,45 +11,13 @@
 
 #pragma warning(disable: 6386)
 
-constexpr unsigned int maxDirLights = 10;
-constexpr unsigned int maxPointLights = 10;
 
-
-struct alignas(16) UniformBufferObject
+struct alignas(16) GBufferUBO
 {
 	glm::mat4 model = glm::mat4(1.0f);								
 	glm::mat4 view = glm::mat4(1.0f);
 	glm::mat4 projection = glm::mat4(1.0f);
 	glm::vec4 color = glm::vec4();
-	glm::vec2 mouse = (glm::vec2)InputManager::getMousePosition();	
-	glm::vec2 resolution = glm::vec2(.0f);							
-	glm::vec4 cameraPosition = glm::vec4(.0f);
-	glm::vec4 dirLightsDirections[maxDirLights] = {};
-	glm::vec4 pointLightsPositions[maxPointLights] = {};
-	//color also encodes intensity (w)
-	glm::vec4 dirLightsColors[maxDirLights] = {};
-	glm::vec4 pointLightsColors[maxPointLights] = {};
-	float time = Time::now().asSeconds();
-	int dirLightAmount = 0;
-	int pointLightAmount = 0;
-
-	void setDirLight(int index, glm::vec3 color,float intensity, glm::vec3 direction)
-	{
-#ifndef NDEBUG
-		if (index > maxDirLights) return;
-#endif
-		dirLightsColors[index] = glm::vec4(color, intensity);
-		dirLightsDirections[index] = glm::vec4(direction, .0f);
-	}
-
-	void setPointLight(int index, glm::vec3 color, float intensity, glm::vec3 position)
-	{
-#ifndef NDEBUG
-		if (index > maxPointLights) return;
-#endif
-		pointLightsColors[index] = glm::vec4(color, intensity);
-		pointLightsPositions[index] = glm::vec4(position, 1.0f);
-	}
 };
 
 struct uniformDataCreationInfo
@@ -101,7 +69,7 @@ public:
 	}
 
 	void createUniformBuffers(VkDevice device, VkPhysicalDevice physicalDevice, const SwapChainData &swapChainData) {
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+		VkDeviceSize bufferSize = sizeof(GBufferUBO);
 		uniformBuffers.resize(swapChainData.imagesCount);
 		uniformBuffersMemory.resize(swapChainData.imagesCount);
 
@@ -142,7 +110,7 @@ public:
 			VkDescriptorBufferInfo bufferInfo = {};
 			bufferInfo.buffer = uniformBuffers[i];
 			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
+			bufferInfo.range = sizeof(GBufferUBO);
 
 			VkDescriptorImageInfo imageInfo = {};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

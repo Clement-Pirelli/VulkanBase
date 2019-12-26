@@ -17,8 +17,8 @@ public:
 	int run();
 
 
-	static constexpr unsigned int WINDOWED_WIDTH = 900;
-	static constexpr unsigned int WINDOWED_HEIGHT = 600;
+	static constexpr unsigned int WINDOWED_WIDTH = 1920/3;
+	static constexpr unsigned int WINDOWED_HEIGHT = 1080/3;
 
 
 	static constexpr unsigned int FULLSCREEN_WIDTH = 1920;

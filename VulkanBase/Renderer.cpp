@@ -8,11 +8,11 @@
 #include "VulkanUtilities.h"
 #include "UniformData.h"
 #include "VertexBufferObject.h"
-#include "UniformData.h"
 #include "Model.h"
 #include "Transform.h"
 #include "Camera.h"
 #include "ResourceProvider.h"
+#include "InputManager.h"
 
 #pragma warning(disable: 6385)
 #pragma warning(disable: 26812)
@@ -836,7 +836,7 @@ void Renderer::createRenderPass()
 
 		VkAttachmentDescription normalAttachment = {};
 		{
-			normalAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
+			normalAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 			normalAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 			normalAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			normalAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -853,7 +853,7 @@ void Renderer::createRenderPass()
 
 		VkAttachmentDescription positionAttachment = {};
 		{
-			positionAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
+			positionAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 			positionAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 			positionAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			positionAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -941,7 +941,7 @@ void Renderer::createRenderPass()
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &ssaoResources.renderPass) != VK_SUCCESS) {
+		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &deferredResources.renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}
 	}
@@ -950,7 +950,7 @@ void Renderer::createRenderPass()
 
 void Renderer::createFramebuffers() {
 	swapChainFramebuffers.resize(swapChainData.imagesCount);
-	ssaoResources.frameBuffers.resize(swapChainData.imagesCount);
+	deferredResources.frameBuffers.resize(swapChainData.imagesCount);
 	constexpr uint32_t attachmentsCount = 4;
 	for (size_t i = 0; i < swapChainData.imagesCount; i++) {
 
@@ -976,14 +976,14 @@ void Renderer::createFramebuffers() {
 
 		VkFramebufferCreateInfo ssaoFramebufferInfo = {};
 		ssaoFramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		ssaoFramebufferInfo.renderPass = ssaoResources.renderPass;
+		ssaoFramebufferInfo.renderPass = deferredResources.renderPass;
 		ssaoFramebufferInfo.attachmentCount = 1;
 		ssaoFramebufferInfo.pAttachments = &swapChainData.imageViews[i];
 		ssaoFramebufferInfo.width = swapChainData.extent.width;
 		ssaoFramebufferInfo.height = swapChainData.extent.height;
 		ssaoFramebufferInfo.layers = 1;
 
-		if (vkCreateFramebuffer(device, &ssaoFramebufferInfo, nullptr, &ssaoResources.frameBuffers[i]) != VK_SUCCESS) {
+		if (vkCreateFramebuffer(device, &ssaoFramebufferInfo, nullptr, &deferredResources.frameBuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create ssao framebuffer!");
 		}
 	}
@@ -1039,7 +1039,7 @@ void Renderer::cleanupSwapChain()
 
 	for (unsigned int i = 0; i < swapChainFramebuffers.size(); i++) {
 		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
-		vkDestroyFramebuffer(device, ssaoResources.frameBuffers[i], nullptr);
+		vkDestroyFramebuffer(device, deferredResources.frameBuffers[i], nullptr);
 	}
 
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
@@ -1051,11 +1051,11 @@ void Renderer::cleanupSwapChain()
 		vkDestroyPipelineLayout(device, currentShader.pipelineLayout, nullptr);
 	}
 
-	vkDestroyPipeline(device, ssaoResources.pipeline, nullptr);
-	vkDestroyPipelineLayout(device, ssaoResources.pipelineLayout, nullptr);
+	vkDestroyPipeline(device, deferredResources.pipeline, nullptr);
+	vkDestroyPipelineLayout(device, deferredResources.pipelineLayout, nullptr);
 	
 	vkDestroyRenderPass(device, renderPass, nullptr);
-	vkDestroyRenderPass(device, ssaoResources.renderPass, nullptr);
+	vkDestroyRenderPass(device, deferredResources.renderPass, nullptr);
 
 	for (unsigned int i = 0; i < swapChainData.imagesCount; i++)
 	{
@@ -1069,8 +1069,14 @@ void Renderer::cleanupSwapChain()
 		{
 			modelPair.second.uniformData.cleanup(device);
 		}
+	for (size_t i = 0; i < deferredResources.uniformBuffers.size(); i++) {
+		vkDestroyBuffer(device, deferredResources.uniformBuffers[i], nullptr);
+		vkFreeMemory(device, deferredResources.uniformBuffersMemory[i], nullptr);
+	}
 
-	vkDestroyDescriptorPool(device, ssaoResources.descriptorPool, nullptr);
+	deferredResources.uniformBuffers.clear();
+	deferredResources.uniformBuffersMemory.clear();
+	vkDestroyDescriptorPool(device, deferredResources.descriptorPool, nullptr);
 
 }
 
@@ -1089,12 +1095,13 @@ void Renderer::recreateSwapChain(){
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
+	createDeferredUniformBuffers();
 
 	for(auto &shaderPair : shaderMap.getRawMap())
 	{
 		populateShaderData(shaderPair.second);
 	}
-	createSSAOShader();
+	createDeferredShader();
 	createGBufferResources();
 	createFramebuffers();
 	for (auto &shaderPair : shaderMap.getRawMap())
@@ -1102,7 +1109,7 @@ void Renderer::recreateSwapChain(){
 		{
 			modelPair.second.uniformData.createData(device, physicalDevice, swapChainData, descriptorSetLayout, textures[modelPair.second.textureHandle.handle]);
 		}
-	createSSAODescriptorSets();
+	createDeferredDescriptorSets();
 	createCommandBuffers();
 }
 
@@ -1139,7 +1146,7 @@ void Renderer::createDescriptorSetLayout()
 	//ssao
 	{
 
-		constexpr int samplerLayoutBindingAmount = 4;
+		constexpr int samplerLayoutBindingAmount = 5;
 
 		VkDescriptorSetLayoutBinding colorSamplerLayoutBinding = {};
 		colorSamplerLayoutBinding.binding = 0;
@@ -1153,8 +1160,11 @@ void Renderer::createDescriptorSetLayout()
 		VkDescriptorSetLayoutBinding positionSamplerLayoutBinding = {};
 		positionSamplerLayoutBinding.binding = 3;
 		
+		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+		uboLayoutBinding.binding = 4;
+
 		//color, normals, depth, position
-		VkDescriptorSetLayoutBinding bindings[samplerLayoutBindingAmount] = { colorSamplerLayoutBinding, normalSamplerLayoutBinding, depthSamplerLayoutBinding, positionSamplerLayoutBinding };
+		VkDescriptorSetLayoutBinding bindings[samplerLayoutBindingAmount] = { colorSamplerLayoutBinding, normalSamplerLayoutBinding, depthSamplerLayoutBinding, positionSamplerLayoutBinding, uboLayoutBinding };
 		
 		for(int i = 0; i < samplerLayoutBindingAmount;i++)
 		{
@@ -1165,65 +1175,79 @@ void Renderer::createDescriptorSetLayout()
 			bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		}
 
+		bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 4;
+		layoutInfo.bindingCount = samplerLayoutBindingAmount;
 		layoutInfo.pBindings = bindings;
 
-		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &ssaoResources.descriptorSetLayout) != VK_SUCCESS) {
+		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &deferredResources.descriptorSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create SSAO descriptor set layout!");
 		}
 	}
 
 }
 
-void Renderer::updateUniformBuffer(uint32_t currentImage)
+void Renderer::updateUniformBuffers(uint32_t currentImage)
 {
-	UniformBufferObject ubo;
-	ubo.resolution = resolution;
-	glm::mat4 projMat = camera.getProjectionMat();
-	//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
-	projMat[1][1] *= -1;
-	ubo.projection = projMat;
-	ubo.view = camera.getViewMat();
-	ubo.dirLightAmount = (int)dirLMap.count();
-	auto dirmap = dirLMap.getRawMap();
-	int i = 0;
-	for(auto &iterator : dirmap)
+	GBufferUBO gUBO;
 	{
-		DirLight& light = iterator.second;
-		ubo.setDirLight(i, light.color, light.intensity, light.direction);
-		i++;
-	}
-
-	ubo.cameraPosition = glm::vec4(camera.getTransform().getGlobalPosition(), 1.0f);
-	ubo.pointLightAmount = (int)pointLMap.count();
-
-	for(auto &shaderPair : shaderMap.getRawMap())
-		for(auto &modelPair : shaderPair.second.modelMap.getRawMap())
-		{
-			Model &currentModel = modelPair.second;
-			ubo.model = currentModel.transform.getGlobalTransform();
-			ubo.color = currentModel.color;
-
-			//set point lights
-			auto pointmap = pointLMap.getRawMap();
-			int j = 0;
-			for (auto& iterator : pointmap)
+		glm::mat4 projMat = camera.getProjectionMat();
+		//opengl to vulkan : y axis is inverted. Image will be rendered upside down if we don't do this
+		projMat[1][1] *= -1;
+		gUBO.projection = projMat;
+		gUBO.view = camera.getViewMat();
+		for (auto& shaderPair : shaderMap.getRawMap())
+			for (auto& modelPair : shaderPair.second.modelMap.getRawMap())
 			{
-				PointLight& light = iterator.second;
-				glm::vec3 pointLPos = ubo.projection * ubo.view * glm::vec4(light.position, 1.0f);
-				ubo.setPointLight(j, light.color, light.intensity, pointLPos);
-				j++;
+				Model& currentModel = modelPair.second;
+				gUBO.model = currentModel.transform.getGlobalTransform();
+				gUBO.color = currentModel.color;
+				void* data;
+				vkMapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(gUBO), 0, &data);
+				memcpy(data, &gUBO, sizeof(gUBO));
+				vkUnmapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage));
 			}
+	}
+	
 
 
-			void* data;
-			vkMapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage), 0, sizeof(ubo), 0, &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vkUnmapMemory(device, currentModel.uniformData.getUniformBuffersMemory()->at(currentImage));
+	DeferredUBO deferredUBO;
+	{
+		deferredUBO.resolution = resolution;
+
+		//set dir lights
+		auto dirmap = dirLMap.getRawMap();
+		int i = 0;
+		for (auto& iterator : dirmap)
+		{
+			DirLight& light = iterator.second;
+			deferredUBO.setDirLight(i, light.color, light.intensity, light.direction);
+			i++;
 		}
+
+		deferredUBO.dirLightAmount = (int)dirLMap.count();
+
+		//set point lights
+		auto pointmap = pointLMap.getRawMap();
+		int j = 0;
+		for (auto& iterator : pointmap)
+		{
+			PointLight& light = iterator.second;
+			deferredUBO.setPointLight(j, light.color, light.intensity, light.position);
+			j++;
+		}
+
+		deferredUBO.cameraPosition = glm::vec4(camera.getTransform().getGlobalPosition(), 1.0f);
+		deferredUBO.pointLightAmount = (int)pointLMap.count();
+
+		deferredUBO.mouse = (glm::vec2)InputManager::getMousePosition();
+		void* data;
+		vkMapMemory(device, deferredResources.uniformBuffersMemory[currentImage],0, sizeof(DeferredUBO), 0, &data);
+		memcpy(data, &deferredUBO, sizeof(DeferredUBO));
+		vkUnmapMemory(device, deferredResources.uniformBuffersMemory[currentImage]);
+	}
 }
 
 void Renderer::recreateCommandBufferData()
@@ -1234,12 +1258,12 @@ void Renderer::recreateCommandBufferData()
 	createCommandBuffers();
 }
 
-void Renderer::createSSAOShader()
+void Renderer::createDeferredShader()
 {
 	std::vector<char> vertShaderCode;
-	readFile(std::string("shaders/ssao/vert.spv"), vertShaderCode);
+	readFile(std::string("shaders/deferredLighting/vert.spv"), vertShaderCode);
 	std::vector<char> fragShaderCode;
-	readFile(std::string("shaders/ssao/frag.spv"), fragShaderCode);
+	readFile(std::string("shaders/deferredLighting/frag.spv"), fragShaderCode);
 
 	VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1339,11 +1363,11 @@ void Renderer::createSSAOShader()
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &ssaoResources.descriptorSetLayout;
+	pipelineLayoutInfo.pSetLayouts = &deferredResources.descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &ssaoResources.pipelineLayout) != VK_SUCCESS) {
+	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &deferredResources.pipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
 	}
 
@@ -1367,14 +1391,14 @@ void Renderer::createSSAOShader()
 	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr; // Optional
-	pipelineInfo.layout = ssaoResources.pipelineLayout;
-	pipelineInfo.renderPass = ssaoResources.renderPass;
+	pipelineInfo.layout = deferredResources.pipelineLayout;
+	pipelineInfo.renderPass = deferredResources.renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
 
 
-	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &ssaoResources.pipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &deferredResources.pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create SSAO graphics pipeline!");
 	}
 
@@ -1382,9 +1406,26 @@ void Renderer::createSSAOShader()
 	vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void Renderer::createSSAODescriptorSets()
+void Renderer::createDeferredUniformBuffers()
 {
-	constexpr uint32_t poolSizesCount = 4;
+	VkDeviceSize bufferSize = sizeof(DeferredUBO);
+	deferredResources.uniformBuffers.resize(swapChainData.imagesCount);
+	deferredResources.uniformBuffersMemory.resize(swapChainData.imagesCount);
+
+	for (size_t i = 0; i < swapChainData.imagesCount; i++) {
+		bufferCreationInfo creationInfo;
+		creationInfo.size = bufferSize;
+		creationInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		creationInfo.properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		creationInfo.physicalDevice = physicalDevice;
+		creationInfo.device = device;
+		createBuffer(creationInfo, deferredResources.uniformBuffers[i], deferredResources.uniformBuffersMemory[i]);
+	}
+}
+
+void Renderer::createDeferredDescriptorSets()
+{
+	constexpr uint32_t poolSizesCount = 5;
 	VkDescriptorPoolSize poolSizes[poolSizesCount];
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainData.imagesCount);
@@ -1394,6 +1435,8 @@ void Renderer::createSSAODescriptorSets()
 	poolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainData.imagesCount);
 	poolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSizes[3].descriptorCount = static_cast<uint32_t>(swapChainData.imagesCount);
+	poolSizes[4].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[4].descriptorCount = static_cast<uint32_t>(swapChainData.imagesCount);
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1401,23 +1444,23 @@ void Renderer::createSSAODescriptorSets()
 	poolInfo.pPoolSizes = poolSizes;
 	poolInfo.maxSets = swapChainData.imagesCount;
 
-	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &ssaoResources.descriptorPool) != VK_SUCCESS) {
+	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &deferredResources.descriptorPool) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create SSAO descriptor pool!");
 	}
 	std::vector<VkDescriptorSetLayout> layouts;
 	for (unsigned int i = 0; i < swapChainData.imagesCount; i++)
 	{
-		layouts.push_back(ssaoResources.descriptorSetLayout);
+		layouts.push_back(deferredResources.descriptorSetLayout);
 	}
 
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = ssaoResources.descriptorPool;
+	allocInfo.descriptorPool = deferredResources.descriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainData.imagesCount);
 	allocInfo.pSetLayouts = layouts.data();
 
-	ssaoResources.descriptorSets.resize(swapChainData.imagesCount);
-	if (vkAllocateDescriptorSets(device, &allocInfo, ssaoResources.descriptorSets.data()) != VK_SUCCESS) {
+	deferredResources.descriptorSets.resize(swapChainData.imagesCount);
+	if (vkAllocateDescriptorSets(device, &allocInfo, deferredResources.descriptorSets.data()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate SSAO descriptor sets!");
 	}
 
@@ -1443,13 +1486,18 @@ void Renderer::createSSAODescriptorSets()
 		positionImageInfo.imageView = gBuffer.positionTexture.getView();
 		positionImageInfo.sampler = gBuffer.sampler;
 
+		VkDescriptorBufferInfo deferredBufferInfo = {};
+		deferredBufferInfo.buffer = deferredResources.uniformBuffers[i];
+		deferredBufferInfo.offset = 0;
+		deferredBufferInfo.range = sizeof(DeferredUBO);
 
-		constexpr uint32_t descriptorWritesCount = 4;
+
+		constexpr uint32_t descriptorWritesCount = 5;
 		VkWriteDescriptorSet descriptorWrites[descriptorWritesCount] = {};
 
 		//color
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = ssaoResources.descriptorSets[i];
+		descriptorWrites[0].dstSet = deferredResources.descriptorSets[i];
 		descriptorWrites[0].dstBinding = 0;
 		descriptorWrites[0].dstArrayElement = 0;
 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1458,7 +1506,7 @@ void Renderer::createSSAODescriptorSets()
 
 		//normal
 		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = ssaoResources.descriptorSets[i];
+		descriptorWrites[1].dstSet = deferredResources.descriptorSets[i];
 		descriptorWrites[1].dstBinding = 1;
 		descriptorWrites[1].dstArrayElement = 0;
 		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1467,7 +1515,7 @@ void Renderer::createSSAODescriptorSets()
 
 		//depth
 		descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[2].dstSet = ssaoResources.descriptorSets[i];
+		descriptorWrites[2].dstSet = deferredResources.descriptorSets[i];
 		descriptorWrites[2].dstBinding = 2;
 		descriptorWrites[2].dstArrayElement = 0;
 		descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1476,12 +1524,21 @@ void Renderer::createSSAODescriptorSets()
 
 		//position
 		descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[3].dstSet = ssaoResources.descriptorSets[i];
+		descriptorWrites[3].dstSet = deferredResources.descriptorSets[i];
 		descriptorWrites[3].dstBinding = 3;
 		descriptorWrites[3].dstArrayElement = 0;
 		descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptorWrites[3].descriptorCount = 1;
 		descriptorWrites[3].pImageInfo = &positionImageInfo;
+
+		descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[4].dstSet = deferredResources.descriptorSets[i];
+		descriptorWrites[4].dstBinding = 4;
+		descriptorWrites[4].dstArrayElement = 0;
+		descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[4].descriptorCount = 1;
+		descriptorWrites[4].pBufferInfo = &deferredBufferInfo;
+
 
 		vkUpdateDescriptorSets(device, descriptorWritesCount, descriptorWrites, 0, nullptr);
 	}
@@ -1581,7 +1638,7 @@ void Renderer::createGBufferResources()
 
 	populateGBufferResource(
 		gBuffer.normalTexture,
-		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		(VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1595,7 +1652,7 @@ void Renderer::createGBufferResources()
 
 	populateGBufferResource(
 		gBuffer.positionTexture,
-		VK_FORMAT_B8G8R8A8_SRGB,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		(VkImageUsageFlagBits)(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
@@ -1611,11 +1668,12 @@ void Renderer::initVulkan() {
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
+	createDeferredUniformBuffers();
 	createDescriptorSetLayout();
-	createSSAOShader();
+	createDeferredShader();
 	createCommandPool();
 	createGBufferResources();
-	createSSAODescriptorSets();
+	createDeferredDescriptorSets();
 	createFramebuffers();
 	createSyncObjects();
 	createCommandBuffers();
@@ -1640,7 +1698,7 @@ void Renderer::drawFrame()
 		recreateSwapChain(); return;
 	} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){ throw std::runtime_error("failed to acquire swap chain image!"); }
 
-	updateUniformBuffer(imageIndex);
+	updateUniformBuffers(imageIndex);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1694,7 +1752,7 @@ void Renderer::cleanup()
 	clearModelTextures();
 
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-	vkDestroyDescriptorSetLayout(device, ssaoResources.descriptorSetLayout, nullptr),
+	vkDestroyDescriptorSetLayout(device, deferredResources.descriptorSetLayout, nullptr),
 	clearModelVBOs();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1761,7 +1819,7 @@ void Renderer::createCommandBuffers() {
 
 	VkRenderPassBeginInfo ssaoRenderPassInfo = {};
 	ssaoRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	ssaoRenderPassInfo.renderPass = ssaoResources.renderPass;
+	ssaoRenderPassInfo.renderPass = deferredResources.renderPass;
 	ssaoRenderPassInfo.renderArea.offset = { 0, 0 };
 	ssaoRenderPassInfo.renderArea.extent = swapChainData.extent;
 	ssaoRenderPassInfo.clearValueCount = 1;
@@ -1794,13 +1852,13 @@ void Renderer::createCommandBuffers() {
 
 		//ssao
 		{
-			ssaoRenderPassInfo.framebuffer = ssaoResources.frameBuffers[i];
+			ssaoRenderPassInfo.framebuffer = deferredResources.frameBuffers[i];
 			vkCmdBeginRenderPass(commandBuffers[i], &ssaoRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoResources.pipeline);
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, deferredResources.pipeline);
 			VkDeviceSize offsets[] = { 0 };
 
 			//uniforms
-			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoResources.pipelineLayout, 0, 1, &ssaoResources.descriptorSets[i], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, deferredResources.pipelineLayout, 0, 1, &deferredResources.descriptorSets[i], 0, nullptr);
 			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);

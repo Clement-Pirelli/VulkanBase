@@ -1,4 +1,7 @@
 #pragma once
+
+#ifndef UTILITIES_H_DEFINED
+#define UTILITES_H_DEFINED
 #include "Time.h"
 
 namespace Util
@@ -25,11 +28,6 @@ namespace Util
 
 		return z;
 	}
-
-	float lerp(float a, float b, float t)
-	{
-		return a + t * (b - a);
-	}
 }
 
 struct box
@@ -38,3 +36,5 @@ struct box
 	glm::vec3 topRightFar;
 };
 
+
+#endif

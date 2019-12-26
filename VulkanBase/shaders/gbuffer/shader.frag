@@ -6,16 +6,6 @@ layout(std140, binding = 0) uniform UniformBufferObject {
 	mat4 view;
 	mat4 projection;
 	vec4 color;
-	vec2 mouse;
-	vec2 resolution;
-	vec4 cameraPosition;
-	vec4 dirLightsDirections[10];
-	vec4 pointLightsPositions[10];
-	vec4 dirLightsColors[10];
-	vec4 pointLightsColors[10];
-	float time;						
-	int dirLightAmount;
-	int pointLightAmount;
 } ubo;
 
 layout(binding = 1) uniform sampler2D texSampler;

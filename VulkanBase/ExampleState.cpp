@@ -16,11 +16,18 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 
 	//models
 
-	modelHandles.resize(2);
-	Transform lionTransform = Transform(glm::vec3(.01f, .01f, .01f), glm::vec3(.0f, .0f, .0f), glm::vec3(.0f, .0f, .0f));
-	modelHandles[0] = renderer->createModel(shaderHandle, lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(1.0f, .0f, 1.0f, 1.0f));
+	modelHandles.resize(10);
+	std::vector<Transform> transforms;
+	transforms.resize(9);
+	for(int i = 0; i < transforms.size(); i++)
+	{
+		Transform lionTransform = Transform(glm::vec3(.01f, .01f, .01f), glm::vec3((rand() / (float)RAND_MAX - .5f) * 7.0f, .0f, (rand() / (float)RAND_MAX - .5f) * 7.0f), glm::vec3(.0f, (rand() / (float)RAND_MAX - .5f) * 10.0f, .0f));
+		modelHandles[i] = renderer->createModel(shaderHandle, lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(.5f + .5f * (rand() / (float)RAND_MAX), .5f + .5f * (rand() / (float)RAND_MAX), .5f+.5f*(rand() / (float)RAND_MAX), 1.0f));
+
+	}
+
 	Transform planeTransform = Transform(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(.0f, .0f, .0f), glm::vec3(.0f, .0f, .0f));
-	modelHandles[1] = renderer->createModel(shaderHandle, planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, .0f, 1.0f));
+	modelHandles[9] = renderer->createModel(shaderHandle, planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//set the camera
 	Transform camTrans = Transform(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(.0f, 1.0f, 5.0f), glm::vec3(.0f, .0f, .0f));
@@ -29,6 +36,14 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 	cameraTransform = &camera.getTransform();
 
 	input = new Input(GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_C, GLFW_KEY_X);
+
+	renderer->createDirLight(glm::vec3(.0f, -1.0f, .0f), glm::vec3(1.0f, .8f, .6f), 1.0f);
+	pLightHandles.resize(100);
+	for(int i = 0; i < pLightHandles.size(); i++)
+	{
+		pLightHandles[i] = renderer->createPointLight(glm::vec3((rand()/(float)RAND_MAX-.5f)*7.0f, .2f, (rand() / (float)RAND_MAX)-.5f)*7.0f, glm::vec3(rand()/(float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), .1f + .5f * rand() / (float)RAND_MAX);
+	}
+
 }
 
 
@@ -65,6 +80,6 @@ void ExampleState::onUpdate(float deltaTime)
 
 	glm::vec3 cameraInputDir = inputDir.z * cameraBackward + inputDir.y * cameraUp + inputDir.x * cameraRight;
 	cameraTransform->addLocalPosition(cameraInputDir*deltaTime*movementSpeed);
-	
+
 	input->onLateUpdate();
 }

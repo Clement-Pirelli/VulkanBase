@@ -11,6 +11,7 @@
 #include "HandleMap.h"
 #include "Camera.h"
 #include "TextureData.h"
+#include "Time.h"
 #pragma warning(disable: 26812)
 
 struct VkSurfaceCapabilitiesKHR;
@@ -63,6 +64,10 @@ struct ModelHandle{
 	uint32_t handle;
 	ShaderHandle shaderHandle;
 };
+
+
+constexpr unsigned int maxDirLights = 10;
+constexpr unsigned int maxPointLights = 100;
 
 struct PointLight
 {
@@ -284,7 +289,7 @@ private:
 
 	void createDescriptorSetLayout();
 
-	void updateUniformBuffer(uint32_t currentImage);
+	void updateUniformBuffers(uint32_t currentImage);
 
 	void recreateCommandBufferData();
 
@@ -299,8 +304,8 @@ private:
 
 #pragma endregion
 
-#pragma region SSAO
-	struct SSAOResources
+#pragma region DEFERRED
+	struct DeferredResources
 	{
 		std::vector<std::pair<glm::vec3, glm::vec2>> quadVertices = {};
 		VkPipeline pipeline = {};
@@ -310,7 +315,9 @@ private:
 		VkDescriptorSetLayout descriptorSetLayout = {};
 		std::vector<VkDescriptorSet> descriptorSets = {};
 		VkDescriptorPool descriptorPool = {};
-	} ssaoResources;
+		std::vector<VkBuffer> uniformBuffers = {};
+		std::vector<VkDeviceMemory> uniformBuffersMemory = {};
+	} deferredResources;
 
 	struct GBuffer
 	{
@@ -320,11 +327,51 @@ private:
 		TextureData positionTexture;
 		VkSampler sampler;
 	} gBuffer;
+
+	struct DeferredUBO
+	{
+		float time = Time::now().asSeconds();				//N
+		int dirLightAmount = 0;
+		int pointLightAmount = 0;
+		bool padding1;
+		glm::vec4 cameraPosition = glm::vec4(.0f);			
+		glm::vec4 dirLightsDirections[maxDirLights] = {};	
+		glm::vec4 pointLightsPositions[maxPointLights] = {};
+		 //color also encodes intensity (w)
+		glm::vec4 dirLightsColors[maxDirLights] = {};		
+		glm::vec4 pointLightsColors[maxPointLights] = {};	
+		glm::vec2 mouse = glm::vec2(.0f);					
+		glm::vec2 resolution = glm::vec2(.0f);				
+
+		void setDirLight(int index, glm::vec3 color, float intensity, glm::vec3 direction)
+		{
+#ifndef NDEBUG
+			if (index > maxDirLights) return;
+#endif
+			dirLightsColors[index] = glm::vec4(color, intensity);
+			dirLightsDirections[index] = glm::vec4(direction, .0f);
+		}
+
+		void setPointLight(int index, glm::vec3 color, float intensity, glm::vec3 position)
+		{
+#ifndef NDEBUG
+			if (index > maxPointLights) return;
+#endif
+			pointLightsColors[index] = glm::vec4(color, intensity);
+			pointLightsPositions[index] = glm::vec4(position, 1.0f);
+		}
+	};
+
+
+
+
 	void populateGBufferResource(TextureData& resource, VkFormat format, VkImageAspectFlagBits aspectFlagBits, VkImageUsageFlagBits usageFlagBits, VkImageLayout endLayout);
 
-	void createSSAOShader();
+	void createDeferredShader();
 
-	void createSSAODescriptorSets();
+	void createDeferredUniformBuffers();
+
+	void createDeferredDescriptorSets();
 
 #pragma endregion
 

@@ -6,16 +6,6 @@ layout(std140, binding = 0) uniform UniformBufferObject {
 	mat4 view;
 	mat4 projection;							
 	vec4 color;
-	vec2 mouse;
-	vec2 resolution;
-	vec4 cameraPosition;
-	vec4 dirLightsDirections[10];
-	vec4 pointLightsPositions[10];
-	vec4 dirLightsColors[10];
-	vec4 pointLightsColors[10];
-	float time;						
-	int dirLightAmount;
-	int pointLightAmount;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
@@ -29,7 +19,7 @@ layout(location = 2) out vec3 outPosition;
 void main() {
 	mat4 world = ubo.projection * ubo.view * ubo.model;
     gl_Position = world * vec4(inPosition, 1.0);
-	outPosition = gl_Position.xyz;
+	outPosition = (ubo.model * vec4(inPosition,1.0)).xyz;
     fragTexCoord = inTexCoord;
 	outNormal = (transpose(inverse(ubo.model)) * vec4(inNormal,.0)).xyz;
 }
