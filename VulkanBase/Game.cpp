@@ -19,6 +19,7 @@ Game::Game()
 	stateMachine = new StateMachine();
 	ExampleState *p = new ExampleState(stateMachine);
 	stateMachine->setFirstState(p);
+	initComplete = true;
 }
 
 Game::~Game()
@@ -107,6 +108,7 @@ void Game::onKeyPressed(InputInfo &info)
 		} break;
 		case GLFW_KEY_R:
 		{
+			if (!initComplete) return;
 			fullScreen = !fullScreen;
 
 			int newWidth = fullScreen ? FULLSCREEN_WIDTH : WINDOWED_WIDTH;

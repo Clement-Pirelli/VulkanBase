@@ -68,7 +68,7 @@ Model &Renderer::getModel(const ModelHandle & handle)
 	return shaderMap[handle.shaderHandle.handle].modelMap[handle.handle];
 }
 
-std::vector<ModelHandle> Renderer::createModels(const ShaderHandle & shaderHandle, std::vector<Transform> &givenTransforms, const char * texturePath, const char * meshPath, std::vector<glm::vec4> colors)
+std::vector<ModelHandle> Renderer::createModels(std::vector<Transform> &givenTransforms, const char * texturePath, const char * meshPath, std::vector<glm::vec4> colors)
 {
 	assert(givenTransforms.size() == colors.size());
 	const size_t modelAmount = givenTransforms.size();

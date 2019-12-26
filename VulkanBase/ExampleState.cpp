@@ -15,16 +15,11 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 
 	//models
 
-	modelHandles.resize(4);
-	for(int i = 0; i < 3; i++)
-	{
-		Transform lionTransform = Transform(glm::vec3(.01f, .01f, .01f), glm::vec3((rand() / (float)RAND_MAX - .5f) * 7.0f, .0f, (rand() / (float)RAND_MAX - .5f) * 7.0f), glm::vec3(.0f, (rand() / (float)RAND_MAX - .5f) * 10.0f, .0f));
-		modelHandles[i] = renderer->createModel(lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(.5f + .5f * (rand() / (float)RAND_MAX), .5f + .5f * (rand() / (float)RAND_MAX), .5f+.5f*(rand() / (float)RAND_MAX), 1.0f));
+	renderer = Singleton<Renderer>::getInstance();
 
-	}
-
-	Transform planeTransform = Transform(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(.0f, .0f, .0f), glm::vec3(.0f, .0f, .0f));
-	modelHandles[3] = renderer->createModel(planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	Transform modelTransform = Transform(glm::vec3(10.0f,10.0f,10.0f), glm::vec3(.0f,.0f,.0f), glm::vec3(.0f,.0f,.0f));
+	renderer->createModel(modelTransform, "_assets/textures/white.png", "_assets/meshes/dragon.o", glm::vec4(1.0f,1.0f,1.0f,1.0f));
+	renderer->createModel(modelTransform, "_assets/textures/concrete.jpg", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//set the camera
 	Transform camTrans = Transform(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(.0f, 1.0f, 5.0f), glm::vec3(.0f, .0f, .0f));
@@ -38,7 +33,7 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 	pLightHandles.resize(100);
 	for(int i = 0; i < pLightHandles.size(); i++)
 	{
-		pLightHandles[i] = renderer->createPointLight(glm::vec3((rand()/(float)RAND_MAX-.5f)*7.0f, .2f, (rand() / (float)RAND_MAX)-.5f)*7.0f, glm::vec3(rand()/(float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), .1f + .5f * rand() / (float)RAND_MAX);
+		pLightHandles[i] = renderer->createPointLight(glm::vec3((float)(Util::rand() % 20), (float)(Util::rand() % 50), (float)(Util::rand() % 40))*.16f, glm::vec3(rand()/(float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), .1f + .2f * rand() / (float)RAND_MAX);
 	}
 
 }
