@@ -15,7 +15,6 @@ public:
 	void onUpdate(float deltaTime) override;
 
 private:
-	ShaderHandle shaderHandle = {};
 	std::vector<ModelHandle> modelHandles = {};
 	Transform *cameraTransform = nullptr;
 	Input *input = nullptr;

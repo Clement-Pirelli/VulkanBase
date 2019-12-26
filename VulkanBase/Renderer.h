@@ -105,10 +105,10 @@ public:
 
 	void clearModelVBOs();
 
-	ModelHandle createModel(const ShaderHandle &shaderHandle, const Transform &givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
+	ModelHandle createModel(const Transform &givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color);
 	Model &getModel(const ModelHandle &handle);
 	std::vector<ModelHandle> createModels(const ShaderHandle &shaderHandle, std::vector<Transform> &givenTransforms, const char *texturePath, const char *meshPath, std::vector<glm::vec4> colors);
-	ShaderHandle createShader(const char *fragmentShaderPath, const char *vertexShaderPath);
+	
 	
 	PointLightHandle createPointLight(glm::vec3 position, glm::vec3 color, float intensity);
 	DirLightHandle createDirLight(glm::vec3 direction, glm::vec3 color, float intensity);
@@ -213,6 +213,7 @@ private:
 	HandleMap<TextureData> textures;
 
 	HandleMap<ShaderData> shaderMap;
+	ShaderHandle shaderHandle = {};
 
 	HandleMap<PointLight> pointLMap;
 	HandleMap<DirLight> dirLMap;
@@ -269,6 +270,9 @@ private:
 	void createImageViews();
 
 #pragma region GRAPHICS_PIPELINE
+
+	ShaderHandle createShader(const char* fragmentShaderPath, const char* vertexShaderPath);
+
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 
 	void populateShaderData(ShaderData &shaderData);

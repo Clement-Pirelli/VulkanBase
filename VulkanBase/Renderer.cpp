@@ -42,7 +42,7 @@ void Renderer::clearModelTextures()
 	ResourceProvider<TextureData>::clearResources();
 }
 
-ModelHandle Renderer::createModel(const ShaderHandle &shaderHandle, const Transform &givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
+ModelHandle Renderer::createModel(const Transform &givenTransform, const char *texturePath, const char *meshPath, glm::vec4 color = glm::vec4(1.0f,1.0f,1.0f,1.0f))
 {
 	TextureData &textureData = ResourceProvider<TextureData>::getResource(std::string(texturePath));
 	VertexBufferObject &vbo = ResourceProvider<VertexBufferObject>::getResource(std::string(meshPath));
@@ -1677,6 +1677,8 @@ void Renderer::initVulkan() {
 	createFramebuffers();
 	createSyncObjects();
 	createCommandBuffers();
+
+	shaderHandle = createShader("shaders/gbuffer/frag.spv", "shaders/gbuffer/vert.spv");
 }
 
 void Renderer::drawFrame()

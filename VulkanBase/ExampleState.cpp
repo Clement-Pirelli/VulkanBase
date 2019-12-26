@@ -12,22 +12,19 @@
 ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMachine)
 {
 	renderer = Singleton<Renderer>::getInstance();
-	shaderHandle = renderer->createShader("shaders/gbuffer/frag.spv", "shaders/gbuffer/vert.spv");
 
 	//models
 
-	modelHandles.resize(10);
-	std::vector<Transform> transforms;
-	transforms.resize(9);
-	for(int i = 0; i < transforms.size(); i++)
+	modelHandles.resize(4);
+	for(int i = 0; i < 3; i++)
 	{
 		Transform lionTransform = Transform(glm::vec3(.01f, .01f, .01f), glm::vec3((rand() / (float)RAND_MAX - .5f) * 7.0f, .0f, (rand() / (float)RAND_MAX - .5f) * 7.0f), glm::vec3(.0f, (rand() / (float)RAND_MAX - .5f) * 10.0f, .0f));
-		modelHandles[i] = renderer->createModel(shaderHandle, lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(.5f + .5f * (rand() / (float)RAND_MAX), .5f + .5f * (rand() / (float)RAND_MAX), .5f+.5f*(rand() / (float)RAND_MAX), 1.0f));
+		modelHandles[i] = renderer->createModel(lionTransform, "_assets/textures/white.png", "_assets/meshes/lion.o", glm::vec4(.5f + .5f * (rand() / (float)RAND_MAX), .5f + .5f * (rand() / (float)RAND_MAX), .5f+.5f*(rand() / (float)RAND_MAX), 1.0f));
 
 	}
 
 	Transform planeTransform = Transform(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(.0f, .0f, .0f), glm::vec3(.0f, .0f, .0f));
-	modelHandles[9] = renderer->createModel(shaderHandle, planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	modelHandles[3] = renderer->createModel(planeTransform, "_assets/textures/white.png", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//set the camera
 	Transform camTrans = Transform(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(.0f, 1.0f, 5.0f), glm::vec3(.0f, .0f, .0f));
