@@ -68,6 +68,7 @@ struct ModelHandle{
 
 constexpr unsigned int maxDirLights = 10;
 constexpr unsigned int maxPointLights = 100;
+constexpr unsigned int ssaoKernelSize = 32;
 
 struct PointLight
 {
@@ -124,6 +125,8 @@ public:
 
 	void destroyModel(const ModelHandle &givenHandle);
 	
+	void toggleSSAO();
+
 	Camera &getCamera();
 
 private:
@@ -332,20 +335,28 @@ private:
 		VkSampler sampler;
 	} gBuffer;
 
+
+	glm::vec4 ssaoKernel[ssaoKernelSize] = {};
+	bool ssaoOn = true;
+
+	void setSSAOKernel();
+
 	struct DeferredUBO
 	{
-		float time = Time::now().asSeconds();				//N
+		float time = Time::now().asSeconds();
 		int dirLightAmount = 0;
 		int pointLightAmount = 0;
-		bool padding1;
+		int ssaoOn = 1;
+		glm::mat4 projection = {};
 		glm::vec4 cameraPosition = glm::vec4(.0f);			
 		glm::vec4 dirLightsDirections[maxDirLights] = {};	
 		glm::vec4 pointLightsPositions[maxPointLights] = {};
 		 //color also encodes intensity (w)
 		glm::vec4 dirLightsColors[maxDirLights] = {};		
-		glm::vec4 pointLightsColors[maxPointLights] = {};	
+		glm::vec4 pointLightsColors[maxPointLights] = {};
+		glm::vec4 ssaoKernel[ssaoKernelSize] = {};
 		glm::vec2 mouse = glm::vec2(.0f);					
-		glm::vec2 resolution = glm::vec2(.0f);				
+		glm::vec2 resolution = glm::vec2(.0f);
 
 		void setDirLight(int index, glm::vec3 color, float intensity, glm::vec3 direction)
 		{

@@ -98,6 +98,7 @@ void Game::initWindow()
 
 void Game::onKeyPressed(InputInfo &info)
 {
+	if (!initComplete) return;
 	if(info.state == INPUT_STATE::RELEASED)
 	{
 		switch(info.key)
@@ -108,7 +109,6 @@ void Game::onKeyPressed(InputInfo &info)
 		} break;
 		case GLFW_KEY_R:
 		{
-			if (!initComplete) return;
 			fullScreen = !fullScreen;
 
 			int newWidth = fullScreen ? FULLSCREEN_WIDTH : WINDOWED_WIDTH;
@@ -122,6 +122,11 @@ void Game::onKeyPressed(InputInfo &info)
 			glfwSetWindowPos(window, newWindowPosX, newWindowPosY);
 
 		}break;
+		case GLFW_KEY_SPACE:
+		{
+			renderer->toggleSSAO();
+		}break;
 		}
+		
 	}
 }

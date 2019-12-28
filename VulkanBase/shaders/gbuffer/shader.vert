@@ -19,7 +19,7 @@ layout(location = 2) out vec3 outPosition;
 void main() {
 	mat4 world = ubo.projection * ubo.view * ubo.model;
     gl_Position = world * vec4(inPosition, 1.0);
-	outPosition = (ubo.model * vec4(inPosition,1.0)).xyz;
+	outPosition = (ubo.view * ubo.model * vec4(inPosition,1.0)).xyz;
     fragTexCoord = inTexCoord;
 	outNormal = (transpose(inverse(ubo.model)) * vec4(inNormal,.0)).xyz;
 }

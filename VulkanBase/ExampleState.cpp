@@ -19,7 +19,7 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 
 	Transform modelTransform = Transform(glm::vec3(10.0f,10.0f,10.0f), glm::vec3(.0f,.0f,.0f), glm::vec3(.0f,.0f,.0f));
 	renderer->createModel(modelTransform, "_assets/textures/white.png", "_assets/meshes/dragon.o", glm::vec4(1.0f,1.0f,1.0f,1.0f));
-	renderer->createModel(modelTransform, "_assets/textures/concrete.jpg", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	renderer->createModel(modelTransform, "_assets/textures/floor.jpg", "_assets/meshes/plane.o", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//set the camera
 	Transform camTrans = Transform(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(.0f, 1.0f, 5.0f), glm::vec3(.0f, .0f, .0f));
@@ -33,7 +33,8 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 	pLightHandles.resize(100);
 	for(int i = 0; i < pLightHandles.size(); i++)
 	{
-		pLightHandles[i] = renderer->createPointLight(glm::vec3((float)(Util::rand() % 20), (float)(Util::rand() % 50), (float)(Util::rand() % 40))*.16f, glm::vec3(rand()/(float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), .1f + .2f * rand() / (float)RAND_MAX);
+		glm::vec3 position = glm::vec3((float)(Util::rand() % 10), (float)(Util::rand() % 40), (float)(Util::rand() % 50)) * .26f - glm::vec3(.0f,.0f,2.0f);
+		pLightHandles[i] = renderer->createPointLight(position, glm::vec3(rand()/(float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX), .1f + .2f * rand() / (float)RAND_MAX);
 	}
 
 }

@@ -17,6 +17,9 @@
 #pragma warning(disable: 6385)
 #pragma warning(disable: 26812)
 
+#define RAND01 ((float)rand() / (float)RAND_MAX)
+#define LERP(a,b,t) (a+t * (b-a))
+
 #pragma region PUBLIC
 
 Renderer::Renderer(GLFWwindow *givenWindow, glm::vec2 givenResolution) : camera(Transform(), .0f, .0f, .0f,.0f), resolution(givenResolution) {
@@ -195,6 +198,11 @@ void Renderer::destroyModel(const ModelHandle &givenHandle)
 	shader.modelMap.remove(givenHandle.handle);
 
 	recreateCommandBufferData();
+}
+
+void Renderer::toggleSSAO()
+{
+	ssaoOn = !ssaoOn;
 }
 
 Camera &Renderer::getCamera()
@@ -1235,14 +1243,27 @@ void Renderer::updateUniformBuffers(uint32_t currentImage)
 		for (auto& iterator : pointmap)
 		{
 			PointLight& light = iterator.second;
-			deferredUBO.setPointLight(j, light.color, light.intensity, light.position);
+			glm::vec4 lightPosition = camera.getViewMat() * glm::vec4(light.position, 1.0f);
+
+			deferredUBO.setPointLight(j, light.color, light.intensity, lightPosition);
 			j++;
 		}
 
+		
+		deferredUBO.projection = gUBO.projection;
 		deferredUBO.cameraPosition = glm::vec4(camera.getTransform().getGlobalPosition(), 1.0f);
 		deferredUBO.pointLightAmount = (int)pointLMap.count();
 
 		deferredUBO.mouse = (glm::vec2)InputManager::getMousePosition();
+
+		for(unsigned int i = 0; i < ssaoKernelSize; i++)
+		{
+			deferredUBO.ssaoKernel[i] = ssaoKernel[i];
+		}
+
+
+		deferredUBO.ssaoOn = ssaoOn ? 1 : 0;
+
 		void* data;
 		vkMapMemory(device, deferredResources.uniformBuffersMemory[currentImage],0, sizeof(DeferredUBO), 0, &data);
 		memcpy(data, &deferredUBO, sizeof(DeferredUBO));
@@ -1659,6 +1680,24 @@ void Renderer::createGBufferResources()
 	);
 }
 
+void Renderer::setSSAOKernel()
+{
+	for (unsigned int i = 0; i < ssaoKernelSize; ++i)
+	{
+		glm::vec3 sample(
+			RAND01 * 2.0 - 1.0,
+			RAND01 * 2.0 - 1.0,
+			RAND01
+		);
+		sample = glm::normalize(sample);
+		sample *= RAND01;
+		float scale = (float)i / (float)ssaoKernelSize;
+		scale = LERP(0.1f, 1.0f, scale * scale);
+		sample *= scale;
+		ssaoKernel[i] = glm::vec4(sample, .0f);
+	}
+}
+
 void Renderer::initVulkan() {
 	createInstance();
 	setupDebugMessenger();
@@ -1677,7 +1716,7 @@ void Renderer::initVulkan() {
 	createFramebuffers();
 	createSyncObjects();
 	createCommandBuffers();
-
+	setSSAOKernel();
 	shaderHandle = createShader("shaders/gbuffer/frag.spv", "shaders/gbuffer/vert.spv");
 }
 
@@ -1779,7 +1818,8 @@ void Renderer::cleanup()
 
 void Renderer::framebufferResizeCallback(GLFWwindow * window, int width, int height)
 {
-	Renderer *ren = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
+	void* windowptr = glfwGetWindowUserPointer(window);
+	Renderer *ren = reinterpret_cast<Renderer*>(windowptr);
 	if(ren != nullptr)
 	{
 		ren->resolution = glm::vec2(width, height);
