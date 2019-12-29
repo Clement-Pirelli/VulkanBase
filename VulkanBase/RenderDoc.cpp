@@ -1,5 +1,5 @@
 #include "RenderDoc.h"
-#include "Dependencies/renderdoc_app.h"
+#include "renderdoc_app.h"
 #include <Windows.h>
 #include <iostream>
 
@@ -49,6 +49,7 @@ void RenderDoc::stopCaptureInternal()
 		std::cout << "Captured frame with renderdoc!\n";
 	}
 	char filename[256];
-	api->GetCapture(0, filename, nullptr, nullptr);
+	uint32_t lastCapture = api->GetNumCaptures() - 1;
+	api->GetCapture(lastCapture, filename, nullptr, nullptr);
 	std::cout << "\nRenderdoc captured at : " << filename << "\n";
 }
