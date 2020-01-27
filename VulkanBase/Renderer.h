@@ -170,7 +170,7 @@ private:
 
 	const unsigned int validationLayersCount = 1;
 	const char* validationLayers[1] = {
-	"VK_LAYER_KHRONOS_validation"
+	"VK_LAYER_LUNARG_standard_validation"
 	};
 
 #ifdef NDEBUG

@@ -118,5 +118,4 @@ void main()
 	}
 
 	outColor = clamp(endCol,.0,1.0);
-	outColor = vec4(occlusion,occlusion,occlusion,1.0);
 }
