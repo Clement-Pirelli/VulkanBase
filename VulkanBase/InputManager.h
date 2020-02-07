@@ -6,7 +6,7 @@
 
 
 //other parts of the program don't need to know of GLFW to know what to do with the input
-enum INPUT_STATE
+enum class INPUT_STATE
 {
 	PRESSED,
 	RELEASED,

@@ -1,6 +1,5 @@
 #include "InputManager.h"
 #include <glfw3.h>
-#include "Delegate.h"
 
 
 DelegateVector InputManager::keyboardCallbacks = DelegateVector();

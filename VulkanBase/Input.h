@@ -24,7 +24,7 @@ public:
 
 	void onKey(InputInfo &info);
 
-
+	bool isGoingFast() { return goingFast; }
 	void onUpdate();
 	void onLateUpdate();
 
@@ -41,5 +41,6 @@ private:
 	glm::dvec2 lastMousePos = glm::vec2(.0f);
 	glm::dvec2 currentMousePos = glm::vec2(.0f);
 	static float mouseSensitivity;
+	bool goingFast = false;
 };
 

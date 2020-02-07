@@ -39,6 +39,6 @@ private:
 	void onKeyPressed(InputInfo &info);
 	bool shouldQuit = false;
 	bool fullScreen = false;
-	Delegate<InputInfo> onEscapeDelegate;
+	Delegate<InputInfo> onKeyPressedDelegate;
 };
 

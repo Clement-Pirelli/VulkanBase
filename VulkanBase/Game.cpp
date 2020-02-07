@@ -91,8 +91,8 @@ void Game::initWindow()
 	glfwSetKeyCallback(window, &InputManager::keyboardKeyCallback);
 	glfwSetMouseButtonCallback(window, &InputManager::mouseButtonCallback);
 
-	onEscapeDelegate = Delegate<InputInfo>::makeDelegate<Game, &Game::onKeyPressed>(this);
-	InputManager::addKeyboardCallback(&onEscapeDelegate);
+	onKeyPressedDelegate = Delegate<InputInfo>::makeDelegate<Game, &Game::onKeyPressed>(this);
+	InputManager::addKeyboardCallback(&onKeyPressedDelegate);
 }
 
 void Game::onKeyPressed(InputInfo &info)

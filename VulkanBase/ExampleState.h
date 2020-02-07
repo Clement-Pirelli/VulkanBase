@@ -2,6 +2,7 @@
 #include "State.h"
 #include "Renderer.h"
 #include "Input.h"
+#include "BoidController.h"
 
 class ExampleState :
 	public State
@@ -15,13 +16,11 @@ public:
 	void onUpdate(float deltaTime) override;
 
 private:
-	ShaderHandle shaderHandle = {};
-	std::vector<ModelHandle> modelHandles = {};
 	Transform *cameraTransform = nullptr;
 	Input *input = nullptr;
 	Renderer *renderer = nullptr;
 	float movementSpeed = 3.0f;
 	DirLightHandle dirLightHandle = {};
-	PointLightHandle pointLightHandle = {};
+	BoidController controller;
 };
 

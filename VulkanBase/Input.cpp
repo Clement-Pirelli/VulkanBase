@@ -1,5 +1,6 @@
 #include "Input.h"
 #include "InputManager.h"
+#include "glfw3.h"
 
 float Input::mouseSensitivity = .01f;
 
@@ -49,6 +50,7 @@ void Input::onKey(InputInfo & info)
 			input[i] = key_state;
 		}
 	}
+	goingFast = info.mods == GLFW_MOD_SHIFT;
 }
 
 void Input::onUpdate()

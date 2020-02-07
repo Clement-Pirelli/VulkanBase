@@ -164,6 +164,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioManager.cpp" />
+    <ClCompile Include="Boid.cpp" />
+    <ClCompile Include="BoidController.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="InputManager.cpp" />
@@ -182,6 +184,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AudioManager.h" />
+    <ClInclude Include="Boid.h" />
+    <ClInclude Include="BoidController.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Delegate.h" />
     <ClInclude Include="Game.h" />
