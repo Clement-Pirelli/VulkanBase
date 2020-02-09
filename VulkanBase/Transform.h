@@ -30,6 +30,7 @@ public:
 	void setLocalScale(glm::vec3 givenScale);
 	void setLocalPosition(glm::vec3 givenPosition);
 	void setLocalRotation(glm::vec3 givenRotation);
+	void setLocalRotation(glm::quat givenRotation);
 
 	void addLocalScale(glm::vec3 givenScaleDelta);
 	void addLocalPosition(glm::vec3 givenPositionDelta);

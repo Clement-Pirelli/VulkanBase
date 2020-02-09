@@ -19,8 +19,8 @@ ExampleState::ExampleState(StateMachine *givenStateMachine) : State(givenStateMa
 
 	input = new Input(GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_C, GLFW_KEY_X);
 
-	dirLightHandle = renderer->createDirLight(glm::vec3(.0f,-1.0f,.0f), glm::vec3(1.0f,.8f,.6f), 1.0f);
-	assert(isHandleValid(dirLightHandle));
+	renderer->createDirLight(glm::vec3(.0f,-1.0f,.0f), glm::vec3(1.0f,.8f,.6f), 1.0f);
+	renderer->createDirLight(glm::vec3(.0f,1.0f,.0f), glm::vec3(.5f, .8f, 1.0f), .1f);
 }
 
 

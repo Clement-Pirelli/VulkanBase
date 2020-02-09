@@ -70,6 +70,12 @@ void Transform::setLocalRotation(glm::vec3 givenRotation)
 	updateLocalTransform();
 }
 
+void Transform::setLocalRotation(glm::quat givenRotation)
+{
+	rotation = givenRotation;
+	updateLocalTransform();
+}
+
 void Transform::addLocalScale(glm::vec3 givenScaleDelta)
 {
 	scale += givenScaleDelta;

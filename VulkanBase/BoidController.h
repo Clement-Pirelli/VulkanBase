@@ -15,16 +15,16 @@ public:
 
 private:
 
-	static constexpr float boundariesDimensions = 20.0f;
-	static constexpr size_t boidsAmount = 100;
+	static constexpr float boundariesDimensions = 8.0f;
+	static constexpr size_t boidsAmount = 300;
 
-	static constexpr float boidSpeed = 4.0f;
-	static constexpr float avoidanceRadius = .2f;
-	static constexpr float cohesionRadius = 10.4f;
-	static constexpr float directionRadius = 1.3f;
-	static constexpr float avoidanceWeight = 1.0f;
+	static constexpr float boidSpeed = 8.0f;
+	static constexpr float avoidanceRadius = 1.0f;
+	static constexpr float cohesionRadius = 3.0f;
+	static constexpr float directionRadius = 6.0f;
+	static constexpr float avoidanceWeight = 10.0f;
 	static constexpr float cohesionWeight = 1.0f;
-	static constexpr float directionWeight = .4f; //todo : make these non-static, let the user change them somewhere?
+	static constexpr float directionWeight = 1.0f; //todo : make these non-const, let the user change them somewhere?
 
 	Transform &getTransform(size_t boidIndex);
 

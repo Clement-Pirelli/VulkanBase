@@ -42,7 +42,7 @@ void Boid::update(float deltaTime)
 		if(distance < BoidController::avoidanceRadius)
 		{
 			avoidanceCount++;
-			avoidanceDirection -= directionTowards / distance;
+			avoidanceDirection += directionTowards / distance;
 		}
 		if(distance < BoidController::cohesionRadius)
 		{
@@ -57,30 +57,27 @@ void Boid::update(float deltaTime)
 	}
 
 	glm::vec3 cohesionDirection = boidsCenter - currentPosition;
+	glm::vec3 currentDirection = glm::vec3();
 
 	if(cohesionCount > 0 && (abs(cohesionDirection.x >.0f) || abs(cohesionDirection.y > .0f) || abs(cohesionDirection.y > .0f)))
-		direction += glm::normalize(cohesionDirection/float(cohesionCount))*BoidController::cohesionWeight;
+		currentDirection += cohesionDirection/float(cohesionCount)*BoidController::cohesionWeight;
 
 	if (directionCount > 0)
-		direction += directionDirection/float(directionCount)*BoidController::directionWeight;
+		currentDirection += directionDirection/float(directionCount)*BoidController::directionWeight;
 
 	if (avoidanceCount > 0)
-		direction += avoidanceDirection/float(cohesionCount)*BoidController::avoidanceWeight;
+		currentDirection -= avoidanceDirection/float(cohesionCount)*BoidController::avoidanceWeight;
 
-	//if (currentPosition.x < -BoidController::boundariesDimensions) direction += glm::vec3(1.0f, .0f, .0f) * float(BoidController::boidsAmount) * 2.0f;
-	//if (currentPosition.x > BoidController::boundariesDimensions) direction -= glm::vec3(1.0f, .0f, .0f) * float(BoidController::boidsAmount) * 2.0f;
-	//if (currentPosition.y < -BoidController::boundariesDimensions) direction += glm::vec3(.0f, 1.0f, .0f) * float(BoidController::boidsAmount) * 2.0f;
-	//if (currentPosition.y > BoidController::boundariesDimensions) direction -= glm::vec3(.0f, 1.0f, .0f) * float(BoidController::boidsAmount) * 2.0f;
-	//if (currentPosition.z < -BoidController::boundariesDimensions) direction += glm::vec3(.0f, .0f, 1.0f) * float(BoidController::boidsAmount) * 2.0f;
-	//if (currentPosition.z > BoidController::boundariesDimensions) direction -= glm::vec3(.0f, .0f, 1.0f) * float(BoidController::boidsAmount) * 2.0f;
+	glm::vec3 toCenter = -currentPosition;
+	currentDirection += toCenter*.01f*deltaTime;
 
-	direction = glm::normalize(direction);
-	
+	direction = glm::normalize(direction + currentDirection);
+
 }
 
 void Boid::lateUpdate(float deltaTime)
 {
 	Transform &myTransform = controller->getTransform(myIndex);
 	myTransform.addLocalPosition(direction * deltaTime * BoidController::boidSpeed);
-	//myTransform.setLocalRotation(glm::eulerAngles(glm::quatLookAt(direction, glm::normalize(glm::vec3(.0f,1.0f,.0f))))); //todo : up vector
+	myTransform.setLocalRotation(glm::quatLookAt(direction * glm::vec3(-1.0f,1.0f,1.0f), glm::normalize(glm::vec3(.0f,1.0f,.0f))));
 }
