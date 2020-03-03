@@ -1,12 +1,10 @@
-#pragma once
-
 #ifndef RENDERER_DEFINED
 #define RENDERER_DEFINED
 
 #include <glm.hpp>
 #include <vector>
 #include <unordered_map>
-#include <Vulkan/vulkan.h>
+#include <Vulkan/vulkan/vulkan.h>
 #include "Optional.h"
 #include "HandleMap.h"
 #include "Camera.h"
