@@ -4,14 +4,10 @@
 
 #include <chrono>
 
-//anonymous namespace - other headers can't see this
-namespace {
-	struct milliseconds
-	{
-		long long amount = 0;
-	};
-}
-
+struct milliseconds
+{
+	long long amount = 0;
+};
 
 class Time
 {
